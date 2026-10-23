@@ -35,8 +35,16 @@ app.mount("/static", StaticFiles(directory=PASTA_APP / "static"), name="static")
 templates = Jinja2Templates(directory=PASTA_APP / "templates")
 
 PAPEIS = {"admin": "Administrador (TI)", "gerente": "Gerente comercial", "assistente": "Assistente comercial"}
-STATUS_LOTE = {"analisado": "Aguardando gerar", "gerado": "Gerado - falta importar no Mercos",
-               "importado": "Importado no Mercos", "cancelado": "Cancelado"}
+STATUS_LOTE = {"analisado": "Aguardando gerar", "gerado": "Gerado - falta importar",
+               "importado": "Importado", "cancelado": "Cancelado"}
+# Para onde vão os preços de cada filial. O nome aparece em toda tela que fala da filial.
+SISTEMAS = {
+    "mercos": {"nome": "Mercos", "onde": "no Mercos", "como": "importação de produtos do Mercos"},
+    "ion": {"nome": "ION", "onde": "no ION (importador de tabelas do Sankhya)",
+            "como": "importador de tabelas do Sankhya, que alimenta o ION"},
+}
+# Logos opcionais: app/static/marcas/mercos.png e ion.png (fora do Git; sem eles, aparece o selo com o nome).
+LOGOS = {s: f"/static/marcas/{s}.png" for s in SISTEMAS if (PASTA_APP / "static" / "marcas" / f"{s}.png").exists()}
 STATUS_TABELA = {"rascunho": "Rascunho", "publicada": "Publicada (vigente)", "substituida": "Substituída",
                  "descartada": "Descartada"}
 
@@ -63,7 +71,7 @@ def data_br(texto) -> str:
 templates.env.filters.update(moeda=moeda, porcentagem=porcentagem, data_br=data_br,
                              numero=lambda v: f"{v:g}".replace(".", ","))
 templates.env.globals.update(PAPEIS=PAPEIS, STATUS_LOTE=STATUS_LOTE, STATUS_TABELA=STATUS_TABELA,
-                             EMPRESA=config.EMPRESA)
+                             SISTEMAS=SISTEMAS, LOGOS=LOGOS, EMPRESA=config.EMPRESA)
 
 
 # ------------------------------------------------------------------ apoio
@@ -77,6 +85,7 @@ def pagina(request: Request, nome: str, status_code: int = 200, **contexto):
         usuario=usuario_atual(request),
         csrf=token_csrf(request),
         mensagens=request.session.pop("mensagens", []),
+        rota=request.url.path,
     )
     return templates.TemplateResponse(request, nome, contexto, status_code=status_code)
 
@@ -125,7 +134,7 @@ def filial_do_pedido(usuario, filial_id: int | None):
 
 def carregar_lote(lote_id: int, usuario):
     lote = db.consultar_um(
-        "SELECT l.*, f.codigo AS filial_codigo, f.nome AS filial_nome, u.nome AS usuario_nome, "
+        "SELECT l.*, f.codigo AS filial_codigo, f.nome AS filial_nome, f.sistema, u.nome AS usuario_nome, "
         "t.vigencia, t.desconto_max, r.codigo AS regiao_codigo "
         "FROM lotes l JOIN filiais f ON f.id = l.filial_id JOIN usuarios u ON u.id = l.usuario_id "
         "JOIN tabelas_preco t ON t.id = l.tabela_id JOIN regioes r ON r.id = t.regiao_id WHERE l.id = ?",
@@ -319,7 +328,7 @@ def inicio(request: Request):
                 "JOIN filiais f ON f.id = l.filial_id JOIN usuarios u ON u.id = l.usuario_id "
                 "WHERE l.status = 'gerado' AND l.gerado_em <= datetime('now', 'localtime', '-1 day')"):
             alertas.append(f"Importação #{lote['id']} ({lote['filial']}, {lote['usuario']}) foi gerada em "
-                           f"{data_br(lote['gerado_em'])} e ainda não foi confirmada no Mercos.")
+                           f"{data_br(lote['gerado_em'])} e ainda não foi confirmada.")
         for s in situacao:
             if s["vigente"] and not s["atualizada"]:
                 alertas.append(f"{s['filial']['nome']} ainda não importou a tabela vigente "
@@ -419,7 +428,7 @@ def ver_tabela(request: Request, tabela_id: int):
         raise HTTPException(404, "Tabela não encontrada.")
     destaque = float(db.obter_config("variacao_destaque"))
     filiais_da_regiao = db.consultar(
-        "SELECT codigo, nome FROM filiais WHERE regiao_id = ? AND ativo = 1 ORDER BY nome", (tabela["regiao_id"],))
+        "SELECT codigo, nome, sistema FROM filiais WHERE regiao_id = ? AND ativo = 1 ORDER BY nome", (tabela["regiao_id"],))
     return pagina(request, "tabela.html", tabela=tabela, resumo=db.de_json(tabela["resumo_json"]),
                   analise=db.de_json(tabela["analise_json"]), destaque=destaque, filiais_da_regiao=filiais_da_regiao)
 
@@ -481,7 +490,72 @@ def importacao(request: Request, filial: str | None = None):
         "SELECT l.*, u.nome AS usuario_nome, t.vigencia FROM lotes l JOIN usuarios u ON u.id = l.usuario_id "
         "JOIN tabelas_preco t ON t.id = l.tabela_id WHERE l.filial_id = ? ORDER BY l.criado_em DESC LIMIT 20",
         (escolhida["id"] if escolhida else 0,))
-    return pagina(request, "importacao.html", filiais=filiais, filial=escolhida, vigente=vigente, lotes=lotes)
+    # importação da tabela vigente que ainda não terminou (evita gerar outra por cima)
+    aberta = next((l for l in lotes if vigente and l["tabela_id"] == vigente["id"] and l["status"] == "gerado"), None)
+    analisada = next((l for l in lotes if vigente and l["tabela_id"] == vigente["id"] and l["status"] == "analisado"), None)
+    feita = next((l for l in lotes if vigente and l["tabela_id"] == vigente["id"] and l["status"] == "importado"), None)
+    return pagina(request, "importacao.html", filiais=filiais, filial=escolhida, vigente=vigente, lotes=lotes,
+                  aberta=aberta, analisada=analisada, feita=feita)
+
+
+@app.post("/importacao/gerar-ion")
+def gerar_ion(request: Request, filial_id: int = Form(0), csrf: str = Form("")):
+    """Filial ION: não há exportação para enviar; a planilha do Sankhya sai direto da tabela vigente."""
+    conferir_csrf(request, csrf)
+    usuario = exigir(request, "assistente")
+    filial = filial_do_pedido(usuario, filial_id)
+    if filial is None or filial["sistema"] != "ion":
+        raise HTTPException(400, "Esta filial não usa o ION.")
+    vigente = tabela_vigente(filial["regiao_id"])
+    if vigente is None:
+        avisar(request, "Ainda não há tabela publicada pelo gerente para esta região.", "erro")
+        return ir(f"/importacao?filial={filial['id']}")
+    aberta = db.consultar_um("SELECT id FROM lotes WHERE filial_id = ? AND tabela_id = ? AND status = 'gerado'",
+                             (filial["id"], vigente["id"]))
+    if aberta:
+        avisar(request, "A planilha desta tabela já foi gerada: baixe abaixo e confirme depois de importar.", "alerta")
+        return ir(f"/lotes/{aberta['id']}")
+
+    itens = sorted(itens_da_tabela(vigente["id"]).values(), key=lambda i: i.linha or 0)
+    itens = [i for i in itens if planilhas.preco_ion(i)]
+    resumo_tabela = db.de_json(vigente["resumo_json"]) or {}
+    anteriores = itens_da_tabela(resumo_tabela["tabela_anterior_id"]) if resumo_tabela.get("tabela_anterior_id") else {}
+    destaque = float(db.obter_config("variacao_destaque"))
+    precos = []
+    for item in itens:
+        novo = planilhas.preco_ion(item)
+        velho = planilhas.preco_ion(anteriores[item.codigo]) if item.codigo in anteriores else None
+        var = round((novo - velho) / velho * 100, 2) if velho else None
+        precos.append((item, velho, novo, var))
+    mudam = [p for p in precos if p[1] is None or p[3]]
+    resumo = {
+        "sistema": "ion",
+        "previa": {"linhas_saida": len(itens), "precos_alterados": len(mudam), "sem_alteracao": len(itens) - len(mudam),
+                   "em_destaque": sum(1 for p in precos if p[3] is not None and abs(p[3]) >= destaque),
+                   "mantidos_fora_tabela": 0, "inativos": 0},
+        "conferencia_filial": {"suspeita": False}, "avisos": [], "cadastrar": [],
+    }
+    base = f"{filial['codigo']}_{vigente['vigencia']}"
+    dados = planilhas.gerar_importacao_sankhya_xls(itens)
+    with db.transacao() as con:
+        lote_id = con.execute(
+            "INSERT INTO lotes (filial_id, tabela_id, usuario_id, status, criado_em, gerado_em, resumo_json) "
+            "VALUES (?,?,?, 'gerado', ?,?,?)",
+            (filial["id"], vigente["id"], usuario["id"], db.agora(), db.agora(), db.para_json(resumo)),
+        ).lastrowid
+    saida_id = auditoria.guardar_arquivo(dados, f"IMPORTAR_SANKHYA_ION_{base}_lote{lote_id}.xls", "importacao",
+                                         usuario["id"])
+    with db.transacao() as con:
+        con.execute("UPDATE lotes SET arquivo_saida_id = ? WHERE id = ?", (saida_id, lote_id))
+        con.executemany(
+            "INSERT INTO lote_precos (lote_id, codigo, nome, cif_antes, cif_depois, var_cif, origem) "
+            "VALUES (?,?,?,?,?,?, 'tabela')",
+            [(lote_id, i.codigo, f"{i.nome} {i.embalagem}".strip(), velho, novo, var) for i, velho, novo, var in precos])
+    auditoria.registrar("importacao_gerada", request=request, usuario=usuario, filial_id=filial["id"], lote_id=lote_id,
+                        detalhes={"sistema": "ion", "produtos": len(itens), "precos_alterados": len(mudam),
+                                  "tabela_id": vigente["id"]})
+    avisar(request, "Planilha do Sankhya gerada. Baixe, suba no importador de tabelas e depois confirme aqui.")
+    return ir(f"/lotes/{lote_id}")
 
 
 def _numeros_previa(saida: list, destaque: float) -> dict:
@@ -532,6 +606,8 @@ async def enviar_exportacao(request: Request, filial_id: int = Form(0), arquivo:
     filial = filial_do_pedido(usuario, filial_id)
     if filial is None:
         raise HTTPException(400, "Escolha a filial.")
+    if filial["sistema"] != "mercos":
+        raise HTTPException(400, "Esta filial usa o ION: não envia exportação do Mercos.")
     vigente = tabela_vigente(filial["regiao_id"])
     if vigente is None:
         avisar(request, "Ainda não há tabela publicada pelo gerente para esta região.", "erro")
@@ -607,7 +683,7 @@ def lista_lotes(request: Request, filial: str | None = None, status: str | None 
         params.append(status)
     onde = ("WHERE " + " AND ".join(filtros)) if filtros else ""
     lotes = db.consultar(
-        "SELECT l.*, f.nome AS filial_nome, u.nome AS usuario_nome, t.vigencia, r.codigo AS regiao_codigo "
+        "SELECT l.*, f.nome AS filial_nome, f.sistema, u.nome AS usuario_nome, t.vigencia, r.codigo AS regiao_codigo "
         "FROM lotes l JOIN filiais f ON f.id = l.filial_id JOIN usuarios u ON u.id = l.usuario_id "
         f"JOIN tabelas_preco t ON t.id = l.tabela_id JOIN regioes r ON r.id = t.regiao_id {onde} "
         "ORDER BY l.criado_em DESC LIMIT 300", params)
@@ -734,15 +810,19 @@ def confirmar_importacao(request: Request, lote_id: int, confirmo: str = Form(""
     lote = carregar_lote(lote_id, usuario)
     if lote["status"] != "gerado":
         raise HTTPException(400, "Só dá para confirmar uma importação já gerada.")
-    if confirmo != "1" or passo3 != "1":
-        avisar(request, "Marque as duas caixas: o resumo do passo 3 conferido e a importação concluída no Mercos.", "erro")
+    ion = lote["sistema"] == "ion"
+    if confirmo != "1" or (passo3 != "1" and not ion):
+        avisar(request, "Marque as caixas de conferência antes de confirmar." if ion else
+               "Marque as duas caixas: o resumo do passo 3 conferido e a importação concluída no Mercos.", "erro")
         return ir(f"/lotes/{lote_id}")
     esperado = (db.de_json(lote["resumo_json"]) or {}).get("previa", {}).get("linhas_saida")
     db.executar("UPDATE lotes SET status = 'importado', importado_em = ? WHERE id = ?", (db.agora(), lote_id))
     auditoria.registrar("importacao_confirmada", request=request, usuario=usuario, filial_id=lote["filial_id"],
                         lote_id=lote_id, detalhes={
+                            "sistema": lote["sistema"],
                             "observacao": observacao.strip() or None,
-                            "passo3_conferido": f"0 novos, {esperado} atualizados, 0 substituídos, 0 excluídos",
+                            "conferido": f"{esperado} produtos no importador do Sankhya" if ion else
+                                         f"0 novos, {esperado} atualizados, 0 substituídos, 0 excluídos",
                         })
     avisar(request, "Importação registrada. Obrigado!")
     return ir(f"/lotes/{lote_id}")
@@ -786,8 +866,9 @@ def baixar_arquivo(request: Request, arquivo_id: int):
                         filial_id=lote["filial_id"] if lote else None,
                         detalhes={"arquivo_id": arquivo_id, "tipo": arquivo["tipo"], "nome": arquivo["nome_original"],
                                   "sha256": arquivo["sha256"]})
-    return FileResponse(caminho, filename=arquivo["nome_original"],
-                        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    tipo = ("application/vnd.ms-excel" if arquivo["nome_original"].lower().endswith(".xls")
+            else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    return FileResponse(caminho, filename=arquivo["nome_original"], media_type=tipo)
 
 
 # ---------------------------------------------------------- administração
@@ -914,12 +995,15 @@ def salvar_regiao(request: Request, regiao_id: str = Form(""), codigo: str = For
 
 @app.post("/admin/filiais/salvar")
 def salvar_filial(request: Request, filial_id: str = Form(""), codigo: str = Form(""), nome: str = Form(""),
-                  regiao_id: str = Form(""), csrf: str = Form("")):
+                  regiao_id: str = Form(""), sistema: str = Form(""), csrf: str = Form("")):
     conferir_csrf(request, csrf)
     admin = exigir(request, "admin")
     cod, nome, regiao = _codigo_cadastro(codigo), nome.strip(), inteiro_ou_nada(regiao_id)
     if not cod or not nome or not regiao or not db.consultar_um("SELECT id FROM regioes WHERE id = ?", (regiao,)):
         avisar(request, "Filial precisa de código (letras e números, até 12), nome e região.", "erro")
+        return ir("/admin/filiais")
+    if sistema not in SISTEMAS:
+        avisar(request, "Escolha para onde vão os preços da filial: Mercos ou ION.", "erro")
         return ir("/admin/filiais")
     existente = db.consultar_um("SELECT * FROM filiais WHERE codigo = ?", (cod,))
     alvo_id = inteiro_ou_nada(filial_id)
@@ -930,12 +1014,16 @@ def salvar_filial(request: Request, filial_id: str = Form(""), codigo: str = For
         antes = db.consultar_um("SELECT * FROM filiais WHERE id = ?", (alvo_id,))
         if antes is None:
             raise HTTPException(404, "Filial não encontrada.")
-        db.executar("UPDATE filiais SET codigo = ?, nome = ?, regiao_id = ? WHERE id = ?", (cod, nome, regiao, alvo_id))
-        detalhes = {"filial_id": alvo_id, "antes": dict(antes), "depois": {"codigo": cod, "nome": nome, "regiao_id": regiao}}
+        db.executar("UPDATE filiais SET codigo = ?, nome = ?, regiao_id = ?, sistema = ? WHERE id = ?",
+                    (cod, nome, regiao, sistema, alvo_id))
+        detalhes = {"filial_id": alvo_id, "antes": dict(antes),
+                    "depois": {"codigo": cod, "nome": nome, "regiao_id": regiao, "sistema": sistema}}
         acao = "filial_alterada"
     else:
-        alvo_id = db.executar("INSERT INTO filiais (codigo, nome, regiao_id) VALUES (?, ?, ?)", (cod, nome, regiao))
-        detalhes, acao = {"filial_id": alvo_id, "codigo": cod, "nome": nome, "regiao_id": regiao}, "filial_criada"
+        alvo_id = db.executar("INSERT INTO filiais (codigo, nome, regiao_id, sistema) VALUES (?, ?, ?, ?)",
+                              (cod, nome, regiao, sistema))
+        detalhes = {"filial_id": alvo_id, "codigo": cod, "nome": nome, "regiao_id": regiao, "sistema": sistema}
+        acao = "filial_criada"
     auditoria.registrar(acao, request=request, usuario=admin, filial_id=alvo_id, detalhes=detalhes)
     avisar(request, f"Filial {cod} salva.")
     return ir("/admin/filiais")

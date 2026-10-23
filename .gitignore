@@ -8,3 +8,6 @@ __pycache__/
 .venv/
 venv/
 dados_backup*/
+
+# logos de terceiros (Mercos, ION): ficam só no servidor
+app/static/marcas/

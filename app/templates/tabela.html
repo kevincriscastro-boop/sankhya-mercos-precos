@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_selos.html" import selo %}
 {% block titulo %}Tabela #{{ tabela.id }}{% endblock %}
 {% block conteudo %}
 <h1>Tabela #{{ tabela.id }} — {{ tabela.regiao_nome }}, vigência {{ tabela.vigencia|data_br }}
@@ -9,7 +10,7 @@
   {% if filiais_da_regiao %}
     <p>Ao publicar, estes preços passam a valer para <strong>{{ filiais_da_regiao|length }}
        filia{{ 'l' if filiais_da_regiao|length == 1 else 'is' }}</strong>:</p>
-    <ul class="filiais-destino">{% for f in filiais_da_regiao %}<li><strong>{{ f.nome }}</strong> <span class="nota">(filial {{ f.codigo }})</span></li>{% endfor %}</ul>
+    <ul class="filiais-destino">{% for f in filiais_da_regiao %}<li><strong>{{ f.nome }}</strong> <span class="nota">(filial {{ f.codigo }})</span> {{ selo(f.sistema, pequeno=True) }}</li>{% endfor %}</ul>
     <p class="nota">Se não for isso, descarte o rascunho e envie de novo escolhendo a região certa.</p>
   {% else %}
     <p><strong>Nenhuma filial ativa está nesta região.</strong> Publicada assim, a tabela não vale para ninguém.

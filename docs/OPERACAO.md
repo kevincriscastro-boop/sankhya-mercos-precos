@@ -32,11 +32,19 @@ Depois: **Website → Python Project → comercialinterno → Restart**.
 
 - Na primeira vez pode aparecer `detected dubious ownership`: rode uma única vez
   `git config --global --add safe.directory /www/wwwroot/comercialinterno` e repita o `git pull`.
-- Se a versão nova mudou o `requirements.txt`, instale antes do Restart:
+- Se a versão nova mudou o `requirements.txt` (a de outubro/2026 acrescentou o `xlwt`, que gera o `.xls` do ION),
+  instale antes do Restart:
   ```bash
   /www/server/pyporject_evn/comercialinterno_sys/bin/pip install -r /www/wwwroot/comercialinterno/requirements.txt
   ```
 - Prefira atualizar fora do horário de uso das assistentes.
+
+### Logos do Mercos e do ION (opcional)
+
+As telas mostram um selo com o nome do destino (**Mercos** azul, **ION** verde). Para usar os logos
+oficiais, coloque os arquivos na VPS em `app/static/marcas/mercos.png` e `app/static/marcas/ion.png`
+(altura de uns 64 px, fundo transparente) e dê **Restart**. A pasta fica fora do Git (são marcas de
+terceiros); sem os arquivos, o app continua com o selo desenhado.
 
 ## Voltar uma versão (rollback)
 

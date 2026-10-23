@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_selos.html" import selo %}
 {% block titulo %}Filiais e regiões{% endblock %}
 {% block conteudo %}
 <h1>Filiais e regiões</h1>
@@ -7,8 +8,8 @@
   <h2>Regiões</h2>
   <p class="nota">Região é o <strong>grupo de filiais que usa a mesma tabela de preço</strong> do gerente. O gerente
     publica uma tabela por região, e ela vale para todas as filiais da região.<br>
-    Exemplo: região <strong>SP</strong> (tabela de São Paulo) com as filiais DC1 e FN2; região <strong>PR</strong>
-    (tabela do Paraná) com a filial FS3. Região <strong>não</strong> é filial: cada conta do Mercos é cadastrada lá embaixo, em Filiais.</p>
+    Exemplo: região <strong>SP</strong> (tabela de São Paulo) com as filiais 9 e 15; região <strong>PR</strong>
+    (tabela do Paraná) com a filial 18. Região <strong>não</strong> é filial: cada conta do Mercos é cadastrada lá embaixo, em Filiais.</p>
   <table class="compacta">
     <thead><tr><th>Código</th><th>Nome</th><th>Filiais</th><th>Tabelas</th><th></th></tr></thead>
     <tbody>
@@ -47,11 +48,16 @@
 
 <section class="cartao">
   <h2>Filiais</h2>
-  <p class="nota">Cada filial é <strong>uma conta do Mercos</strong>: ela exporta e importa o próprio catálogo.
-    Dica: use como código o número da empresa no Sankhya (CODEMP). Filial com histórico ou assistente não é
+  <p class="nota">Cada filial é <strong>um lugar onde os preços são carregados</strong>, e o campo <strong>Destino</strong> diz qual:</p>
+  <ul class="nota">
+    <li>{{ selo('mercos', pequeno=True) }} <strong>Mercos</strong>: a assistente exporta o catálogo do Mercos da filial, o app limpa e gera o arquivo de importação.</li>
+    <li>{{ selo('ion', pequeno=True) }} <strong>ION</strong>: o app gera direto a planilha do <strong>importador de tabelas do Sankhya</strong>
+      (CODPROD · VALOR · TIPO, com o maior preço entre CIF e FOB), que alimenta o ION.</li>
+  </ul>
+  <p class="nota">Dica: use como código o número da empresa no Sankhya (CODEMP). Filial com histórico ou assistente não é
     excluída, só desativada.</p>
   <table class="compacta">
-    <thead><tr><th>Código</th><th>Nome no Mercos</th><th>Região</th><th>Importações</th><th>Assistentes</th><th>Situação</th><th></th></tr></thead>
+    <thead><tr><th>Código · Nome · Região · Destino</th><th></th><th></th><th>Importações</th><th>Assistentes</th><th>Situação</th><th></th></tr></thead>
     <tbody>
     {% for f in lista %}
       <tr class="{{ '' if f.ativo else 'apagado' }}">
@@ -63,6 +69,10 @@
             <select id="filial-regiao-{{ f.id }}" name="regiao_id" aria-label="Região da filial">
               {% for r in regioes %}<option value="{{ r.id }}" {% if r.id == f.regiao_id %}selected{% endif %}>{{ r.codigo }}</option>{% endfor %}
             </select>
+            <select id="filial-sistema-{{ f.id }}" name="sistema" aria-label="Destino dos preços">
+              {% for k, s in SISTEMAS.items() %}<option value="{{ k }}" {% if k == f.sistema %}selected{% endif %}>{{ s.nome }}</option>{% endfor %}
+            </select>
+            {{ selo(f.sistema, pequeno=True) }}
           </form>
         </td>
         <td>{{ f.qtd_lotes }}</td><td>{{ f.qtd_usuarios }}</td>
@@ -90,10 +100,13 @@
   <form method="post" action="/admin/filiais/salvar" class="linha-form">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <label>Código <input id="nova-filial-codigo" name="codigo" size="8" placeholder="ex.: FN2" required></label>
-    <label>Nome (como aparece no Mercos) <input id="nova-filial-nome" name="nome" size="34" required></label>
+    <label>Nome <input id="nova-filial-nome" name="nome" size="34" required></label>
     <label>Região <select id="nova-filial-regiao" name="regiao_id" required>
       <option value="" selected disabled>escolha…</option>
       {% for r in regioes %}<option value="{{ r.id }}">{{ r.codigo }} — {{ r.nome }}</option>{% endfor %}</select></label>
+    <label>Destino dos preços <select id="nova-filial-sistema" name="sistema" required>
+      <option value="" selected disabled>escolha…</option>
+      {% for k, s in SISTEMAS.items() %}<option value="{{ k }}">{{ s.nome }} — {{ s.como }}</option>{% endfor %}</select></label>
     <button>Criar filial</button>
   </form>
   {% endif %}

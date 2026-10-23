@@ -55,8 +55,10 @@ feita por quem conhece os preços e com as travas que antes dependiam da experi�
 - **Tabela do gerente por região:** o gerente envia a planilha, informa vigência e **desconto
   máximo** do vendedor, confere a variação contra a tabela anterior e publica. Códigos repetidos
   com preços diferentes são apontados antes da publicação.
-- **Importação por filial:** a assistente envia a exportação do Mercos **da própria filial** e o app
-  gera o arquivo de importação, com o resumo esperado do passo 3 do Mercos.
+- **Importação por filial, no Mercos ou no ION:** cada filial tem um **destino**, sempre visível na tela.
+  No **Mercos**, a assistente envia a exportação **da própria filial** e o app gera o arquivo de importação,
+  com o resumo esperado do passo 3. No **ION**, o app gera direto a planilha do **importador de tabelas do
+  Sankhya** (CODPROD · VALOR · TIPO, com o maior preço entre CIF e FOB).
 - **Limpeza automática:** linhas sem código, códigos com mais de um cadastro e produtos fora da
   tabela do gerente ficam **fora** do arquivo, cada um com o motivo.
 - **Só o que muda:** o arquivo leva apenas os produtos cujo preço muda. Estoque vai em branco
@@ -82,6 +84,14 @@ feita por quem conhece os preços e com as travas que antes dependiam da experi�
   <tr>
     <td align="center">Conferência da tabela do gerente</td>
     <td align="center">Arquivo gerado: próximo passo no Mercos</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/importacao.png" alt="Filial no Mercos: tabela pronta para importar"></td>
+    <td><img src="docs/screenshots/importacao-ion.png" alt="Filial no ION: planilha do Sankhya"></td>
+  </tr>
+  <tr>
+    <td align="center">Filial no Mercos: tabela pronta para importar</td>
+    <td align="center">Filial no ION: planilha do importador do Sankhya</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/inicio.png" alt="Tela inicial do administrador"></td>

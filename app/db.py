@@ -14,13 +14,15 @@ CREATE TABLE IF NOT EXISTS regioes (
     nome    TEXT NOT NULL
 );
 
--- Filial = uma conta do Mercos (cada uma exporta e importa o próprio catálogo).
+-- Filial = onde os preços são carregados: uma conta do Mercos (exporta e importa o próprio catálogo)
+-- ou o ION, que recebe os preços pelo importador de tabelas do Sankhya.
 CREATE TABLE IF NOT EXISTS filiais (
     id         INTEGER PRIMARY KEY,
     codigo     TEXT NOT NULL UNIQUE,
     nome       TEXT NOT NULL,
     regiao_id  INTEGER NOT NULL REFERENCES regioes(id),
-    ativo      INTEGER NOT NULL DEFAULT 1
+    ativo      INTEGER NOT NULL DEFAULT 1,
+    sistema    TEXT NOT NULL DEFAULT 'mercos' CHECK (sistema IN ('mercos', 'ion'))
 );
 
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -228,6 +230,10 @@ def obter_config(chave: str) -> str:
 def inicializar() -> None:
     with transacao() as con:
         con.executescript(ESQUEMA)
+        # bancos criados antes do ION: a coluna entra com 'mercos', que era o único destino
+        if "sistema" not in {c["name"] for c in con.execute("PRAGMA table_info(filiais)")}:
+            con.execute("ALTER TABLE filiais ADD COLUMN sistema TEXT NOT NULL DEFAULT 'mercos' "
+                        "CHECK (sistema IN ('mercos', 'ion'))")
         for chave, valor in CONFIG_PADRAO.items():
             con.execute("INSERT OR IGNORE INTO configuracoes (chave, valor) VALUES (?, ?)", (chave, valor))
         # Regiões e filiais não vêm prontas: o administrador cadastra na tela "Filiais".

@@ -194,15 +194,19 @@ def main():
         foto("login")
         entrar("admin", senha_inicial(), "Exemplo12345")
         pagina.goto(f"{URL}/admin/filiais")
-        for codigo, nome in (("SP", "São Paulo"), ("PR", "Paraná")):
+        for codigo, nome in (("SP", "São Paulo"), ("PR", "Paraná"), ("MG", "Minas Gerais")):
             pagina.fill("#nova-regiao-codigo", codigo)
             pagina.fill("#nova-regiao-nome", nome)
             pagina.click("button:has-text('Criar região')")
-        for codigo, nome, regiao in (("DC1", "Distribuidora Centro", "SP"), ("FN2", "Filial Norte", "SP"),
-                                     ("FS3", "Filial Sul", "PR")):
+        nomes_regiao = {"SP": "São Paulo", "PR": "Paraná", "MG": "Minas Gerais"}
+        for codigo, nome, regiao, sistema in (("DC1", "Distribuidora Centro", "SP", "mercos"),
+                                              ("FN2", "Filial Norte", "SP", "mercos"),
+                                              ("FS3", "Filial Sul", "PR", "mercos"),
+                                              ("FO4", "Filial Oeste", "MG", "ion")):
             pagina.fill("#nova-filial-codigo", codigo)
             pagina.fill("#nova-filial-nome", nome)
-            pagina.select_option("#nova-filial-regiao", label=f"{regiao} — " + ("São Paulo" if regiao == "SP" else "Paraná"))
+            pagina.select_option("#nova-filial-regiao", label=f"{regiao} — {nomes_regiao[regiao]}")
+            pagina.select_option("#nova-filial-sistema", value=sistema)
             pagina.click("button:has-text('Criar filial')")
         foto("filiais", inteira=True)
 
@@ -210,7 +214,8 @@ def main():
         for login, nome, papel, filial in (("ana.gerente", "Ana (gerente)", "gerente", ""),
                                            ("bruno", "Bruno", "assistente", "Distribuidora Centro"),
                                            ("carla", "Carla", "assistente", "Filial Norte"),
-                                           ("diego", "Diego", "assistente", "Filial Sul")):
+                                           ("diego", "Diego", "assistente", "Filial Sul"),
+                                           ("eva", "Eva", "assistente", "Filial Oeste")):
             pagina.goto(f"{URL}/admin/usuarios")
             formulario = pagina.locator("form[action='/admin/usuarios/criar']")
             formulario.locator("input[name=login]").fill(login)
@@ -225,15 +230,18 @@ def main():
 
         # ---- gerente: tabela de setembro publicada, outubro em rascunho
         entrar("ana.gerente", senhas["ana.gerente"], "Gerente12345")
-        for arquivo, vigencia in ((tabela_set, "2026-09-01"), (tabela_out, "2026-10-01")):
+        for arquivo, vigencia, regiao in ((tabela_set, "2026-09-01", "MG — Minas Gerais"),
+                                          (tabela_out, "2026-10-01", "MG — Minas Gerais"),
+                                          (tabela_set, "2026-09-01", "SP — São Paulo"),
+                                          (tabela_out, "2026-10-01", "SP — São Paulo")):
             pagina.goto(f"{URL}/tabelas")
-            pagina.select_option("select[name=regiao_id]", label="SP — São Paulo")
+            pagina.select_option("select[name=regiao_id]", label=regiao)
             pagina.fill("input[name=vigencia]", vigencia)
             pagina.fill("input[name=desconto_max]", "10")
             pagina.fill("input[name=observacao]", "Reajuste mensal (exemplo)")
             pagina.set_input_files("input[name=arquivo]", str(arquivo))
             pagina.click("button:has-text('Conferir tabela')")
-            if arquivo == tabela_out:
+            if arquivo == tabela_out and regiao.startswith("SP"):
                 foto("tabela-conferencia", inteira=True)
             pagina.check("input[name=confirmo_filiais]")
             pagina.click("button:has-text('Publicar tabela')")
@@ -250,6 +258,14 @@ def main():
         foto("importacao-conferencia", inteira=True)
         pagina.click("button:has-text('Gerar arquivo de importação')")
         foto("importacao-gerada")
+        sair()
+
+        # ---- assistente de filial ION: a planilha do Sankhya sai direto da tabela
+        entrar("eva", senhas["eva"], "Assistente1234")
+        pagina.goto(f"{URL}/importacao")
+        foto("importacao-ion")
+        pagina.click("button:has-text('Gerar planilha para o Sankhya')")
+        foto("importacao-ion-gerada", inteira=True)
         sair()
 
         # ---- admin: visão geral, log e catálogos

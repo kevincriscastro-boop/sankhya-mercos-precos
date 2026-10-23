@@ -5,7 +5,7 @@ Passo a passo de cada papel. Os prints usam dados fictícios.
 | Papel | Pode |
 |---|---|
 | **Gerente** | Enviar, conferir e publicar as tabelas de preço |
-| **Assistente** | Importar **só na própria filial**: enviar a exportação do Mercos, revisar, gerar, baixar e confirmar |
+| **Assistente** | Importar **só na própria filial**: no Mercos (enviar a exportação, revisar, gerar, baixar e confirmar) ou no ION (gerar a planilha do Sankhya, subir e confirmar) |
 | **Administrador** | Tudo, mais filiais, usuários, configurações, log e saúde dos catálogos |
 
 Todo usuário entra com login próprio. No primeiro acesso, o app obriga a trocar a senha temporária
@@ -46,6 +46,12 @@ daquele computador fica bloqueado por 15 minutos.
 
 ## Assistente: importar os preços na filial
 
+Cada filial tem um **destino** para os preços, e a tela de importação mostra qual é no topo, com o selo
+**Mercos** (azul) ou **ION** (verde). Logo abaixo fica o quadro **"Tabela pronta para importar"**, com a
+tabela vigente da região e o próximo passo.
+
+### Filial no Mercos
+
 ![Tela de importação](screenshots/importacao.png)
 
 1. No **Mercos da sua filial**: Produtos → Mais opções → **Exportar**. Não altere o arquivo.
@@ -77,6 +83,27 @@ daquele computador fica bloqueado por 15 minutos.
 O relatório de conferência (`.xlsx`) traz as abas: Resumo, Preços alterados, Fora da tabela,
 Sem alteração, Limpeza, Cadastrar no Sankhya e Avisos.
 
+**Código duplicado no Mercos:** a cópia com vínculo costuma ser a **mais recente** (fim da exportação,
+muitas vezes com preço 0). Confirme pelo estoque, que bate com o disponível no Sankhya. Na cópia errada,
+troque o código (ex.: `12345-ANTIGO`) e desative. Detalhes em [INTEGRACAO.md](INTEGRACAO.md).
+
+### Filial no ION (importador de tabelas do Sankhya)
+
+![Importação de filial ION](screenshots/importacao-ion.png)
+
+No ION não há exportação para enviar: a planilha sai direto da tabela vigente da região.
+
+1. No app, menu **Importação** → **Gerar planilha para o Sankhya (ION)**.
+2. Baixe a planilha (`.xls`, colunas **CODPROD · VALOR · TIPO**). **VALOR** é o **maior** preço da tabela
+   do gerente para cada produto (CIF ou FOB), e **TIPO** é sempre **V**. Vai a tabela inteira.
+3. No Sankhya, suba o arquivo no **importador de tabelas** e confira se ele leu o número de produtos que o
+   app mostra.
+4. Volte ao app, marque a caixa de conferência e clique em **Confirmar importação**.
+
+A tela também compara com a tabela anterior da região: o que mudou e as variações acima de 5%.
+
+![Planilha do ION gerada](screenshots/importacao-ion-gerada.png)
+
 ---
 
 ## Administrador
@@ -93,7 +120,8 @@ há mais de um dia, falhas de login ou erros nas últimas 24 horas.
 
 - **Região** = grupo de filiais que usa a **mesma tabela de preço** (ex.: SP, PR). O gerente publica
   uma tabela por região.
-- **Filial** = uma **conta do Mercos**. Tem código, nome como aparece no Mercos e região.
+- **Filial** = onde os preços são carregados. Tem código, nome, região e **destino**: **Mercos** (uma conta
+  do Mercos) ou **ION** (planilha do importador de tabelas do Sankhya).
 - **Região não é filial.** Exemplo: região **SP** (tabela de São Paulo) com as filiais 9 e 15; região **PR**
   (tabela do Paraná) com a filial 18.
 - Dica: use como código da filial o número da empresa no Sankhya (CODEMP).

@@ -1,43 +1,87 @@
 {% extends "base.html" %}
+{% from "_selos.html" import selo %}
 {% block titulo %}Importação{% endblock %}
 {% block conteudo %}
-<h1>Importação de preços no Mercos</h1>
+<h1>Importação de preços</h1>
 
 {% if not filiais %}
 <p class="msg alerta">Nenhuma filial ativa cadastrada.{% if usuario.papel == 'admin' %} Cadastre em <a href="/admin/filiais">Filiais</a>.{% endif %}</p>
 {% elif usuario.papel == 'admin' %}
-<form method="get" action="/importacao" class="linha-form">
+<form method="get" action="/importacao" class="seletor-filial">
   <label>Filial
     <select id="escolha-filial" name="filial" onchange="this.form.submit()">
       <option value="">escolha…</option>
-      {% for f in filiais %}<option value="{{ f.id }}" {% if filial and f.id == filial.id %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
+      {% for f in filiais %}<option value="{{ f.id }}" {% if filial and f.id == filial.id %}selected{% endif %}>{{ f.nome }} — {{ SISTEMAS[f.sistema].nome }}</option>{% endfor %}
     </select>
   </label>
 </form>
 {% endif %}
 
 {% if filial %}
-<section class="cartao">
-  <h2>{{ filial.nome }}</h2>
-  {% if vigente %}
-    <p>Tabela vigente: <strong>{{ vigente.regiao_nome }}</strong>, vigência <strong>{{ vigente.vigencia|data_br }}</strong>,
-       publicada por {{ vigente.usuario_nome }} em {{ vigente.publicado_em|data_br }} ({{ vigente.total_itens }} produtos).</p>
-    <ol class="passos">
-      <li>No Mercos <strong>desta filial</strong>, exporte os produtos (Produtos → Mais opções → Exportar). Não altere o arquivo.</li>
-      <li>Envie o arquivo aqui. O app limpa, aplica os preços e mostra tudo para conferência.</li>
-      <li>Baixe o arquivo gerado e importe <strong>no Mercos desta mesma filial</strong>.</li>
-      <li>Volte aqui e confirme a importação.</li>
-    </ol>
-    <form method="post" action="/importacao/enviar" enctype="multipart/form-data" class="linha-form">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <input type="hidden" name="filial_id" value="{{ filial.id }}">
-      <label>Exportação do Mercos (.xlsx) <input type="file" name="arquivo" accept=".xlsx" required></label>
-      <button>Enviar e conferir</button>
-    </form>
+{% set s = SISTEMAS[filial.sistema] %}
+<section class="destino-filial destino-{{ filial.sistema }}">
+  {{ selo(filial.sistema) }}
+  <div>
+    <h2>{{ filial.nome }}</h2>
+    <p>Os preços desta filial são carregados <strong>{{ s.onde }}</strong>.</p>
+  </div>
+</section>
+
+{% if not vigente %}
+  <p class="msg alerta">Ainda não há tabela publicada pelo gerente para a região {{ filial.regiao_nome }}.</p>
+{% else %}
+<section class="pronta {{ 'feita' if feita and not aberta }}">
+  <div class="pronta-topo">
+    <span class="pronta-icone" aria-hidden="true">{{ '✓' if feita and not aberta else '★' }}</span>
+    <div>
+      <p class="pronta-rotulo">{% if aberta %}Importação em andamento{% elif feita %}Tabela vigente já importada{% else %}Tabela pronta para importar{% endif %}</p>
+      <h2>{{ vigente.regiao_nome }} · vigência {{ vigente.vigencia|data_br }}</h2>
+      <p class="nota">{{ vigente.total_itens }} produtos · publicada por {{ vigente.usuario_nome }} em {{ vigente.publicado_em|data_br }}</p>
+    </div>
+  </div>
+
+  {% if aberta %}
+    <p>Já existe uma importação desta tabela em andamento: <strong>#{{ aberta.id }}</strong> ({{ STATUS_LOTE[aberta.status] }}).</p>
+    <p><a class="botao grande" href="/lotes/{{ aberta.id }}">Continuar a importação #{{ aberta.id }} →</a></p>
   {% else %}
-    <p class="msg alerta">Ainda não há tabela publicada pelo gerente para a região {{ filial.regiao_nome }}.</p>
+    {% if analisada %}<p class="msg alerta">A importação <a href="/lotes/{{ analisada.id }}">#{{ analisada.id }}</a> está aguardando gerar.
+      Continue nela ou envie uma exportação nova (a antiga pode ser cancelada).</p>{% endif %}
+    {% if feita %}<p class="nota">Importada em {{ feita.importado_em|data_br }} (#{{ feita.id }}). Só gere de novo se algo deu errado.</p>{% endif %}
+
+    {% if filial.sistema == 'ion' %}
+      <ol class="etapas">
+        <li class="atual"><span>1</span>Gere a planilha do Sankhya (aqui)</li>
+        <li><span>2</span>Suba no <strong>importador de tabelas</strong> do Sankhya</li>
+        <li><span>3</span>Volte e confirme</li>
+      </ol>
+      <p>A planilha sai pronta para o importador: <strong>CODPROD · VALOR · TIPO</strong>, com o <strong>maior preço</strong>
+         (CIF ou FOB) de cada produto da tabela, em <strong>.xls</strong>. Não precisa exportar nada antes.</p>
+      <form method="post" action="/importacao/gerar-ion">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="filial_id" value="{{ filial.id }}">
+        <button class="grande">Gerar planilha para o Sankhya (ION)</button>
+      </form>
+    {% else %}
+      <ol class="etapas">
+        <li class="atual"><span>1</span>Exporte do Mercos <strong>desta filial</strong></li>
+        <li><span>2</span>Envie aqui e confira</li>
+        <li><span>3</span>Importe no Mercos (opção "Atualizar")</li>
+        <li><span>4</span>Volte e confirme</li>
+      </ol>
+      <form method="post" action="/importacao/enviar" enctype="multipart/form-data" class="envio">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="filial_id" value="{{ filial.id }}">
+        <label class="zona-arquivo">
+          <span class="zona-titulo">Exportação do Mercos de {{ filial.nome }} (.xlsx)</span>
+          <span class="nota">No Mercos: Produtos → Mais opções → Exportar. Não altere o arquivo.</span>
+          <input type="file" name="arquivo" accept=".xlsx" required>
+        </label>
+        <button class="grande">Enviar e conferir</button>
+      </form>
+    {% endif %}
   {% endif %}
 </section>
+{% endif %}
 
 <section class="cartao">
   <h2>Importações recentes desta filial</h2>
@@ -45,7 +89,8 @@
     <thead><tr><th>#</th><th>Criada em</th><th>Por</th><th>Vigência</th><th>Situação</th><th>Arquivo</th></tr></thead>
     <tbody>{% for l in lotes %}
       <tr><td><a href="/lotes/{{ l.id }}">{{ l.id }}</a></td><td>{{ l.criado_em|data_br }}</td><td>{{ l.usuario_nome }}</td>
-          <td>{{ l.vigencia|data_br }}</td><td>{{ STATUS_LOTE[l.status] }}</td>
+          <td>{{ l.vigencia|data_br }}</td>
+          <td><span class="etiqueta {{ {'importado': 'verde', 'cancelado': 'cinza'}.get(l.status, 'amarela') }}">{{ STATUS_LOTE[l.status] }}</span></td>
           <td>{% if l.arquivo_saida_id %}<a href="/arquivos/{{ l.arquivo_saida_id }}">⬇ baixar</a>{% endif %}</td></tr>
     {% else %}<tr><td colspan="6"><em>Nenhuma ainda.</em></td></tr>{% endfor %}</tbody>
   </table>

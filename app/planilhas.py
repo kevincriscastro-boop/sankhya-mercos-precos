@@ -399,6 +399,8 @@ def montar_plano(exportacao: ExportacaoLida, tabela: dict[str, ItemTabela]) -> P
             ((semelhanca(l.nome, referencia) if referencia else 0.0, _completude(l, colunas), -l.linha, l) for l in grupo),
             key=lambda p: (p[0], p[1], p[2]), reverse=True)
         melhor = pontuadas[0][3]
+        # a cópia com vínculo é a que o connector criou por último: fica no fim da exportação
+        recente = max(grupo, key=lambda l: l.linha)
         for linha in grupo:
             decisoes.append(Decisao(
                 linha.linha, codigo, linha.nome, "remover",
@@ -411,8 +413,9 @@ def montar_plano(exportacao: ExportacaoLida, tabela: dict[str, ItemTabela]) -> P
             "mensagem": f"O código {codigo} tem {len(grupo)} cadastros no Mercos (linhas "
                         f"{', '.join(str(l.linha) for l in grupo)} da exportação) e ficou FORA do arquivo: "
                         "importar apagaria as cópias e criaria um cadastro novo sem vínculo com o connector. "
-                        f"Inative no Mercos a cópia errada (a mais completa parece ser a da linha {melhor.linha}) "
-                        "e gere a importação de novo.",
+                        f"A cópia com vínculo costuma ser a mais recente (linha {recente.linha}, muitas vezes com "
+                        "preço 0); confirme pelo estoque, que bate com o disponível no Sankhya. Na cópia errada, "
+                        f"troque o código (ex.: {codigo}-ANTIGO) e desative; depois gere a importação de novo.",
         })
         for linha in grupo:
             if linha is not melhor and semelhanca(linha.nome, melhor.nome) < 0.5:
@@ -569,6 +572,32 @@ def gerar_importacao_xlsx(exportacao: ExportacaoLida, saida: list[LinhaSaida]) -
         aba.append(linha.valores)
     _estilizar_cabecalho(aba, exportacao.total_colunas)
     aba.column_dimensions["B"].width = 50
+    arquivo = io.BytesIO()
+    pasta.save(arquivo)
+    return arquivo.getvalue()
+
+
+def preco_ion(item: ItemTabela) -> float | None:
+    """O ION recebe um preço só por produto: o maior entre CIF e FOB da tabela do gerente."""
+    precos = [p for p in (item.cif, item.fob) if p]
+    return max(precos) if precos else None
+
+
+def gerar_importacao_sankhya_xls(itens: list[ItemTabela]) -> bytes:
+    """Planilha do importador de tabelas do Sankhya (alimenta o ION): CODPROD, VALOR, TIPO = V.
+
+    Sai em .xls (Excel 97-2003), o formato que o importador aceita.
+    """
+    import xlwt  # só este arquivo usa .xls
+
+    pasta = xlwt.Workbook()
+    aba = pasta.add_sheet("new sheet")
+    for c, titulo in enumerate(("CODPROD", "VALOR", "TIPO")):
+        aba.write(0, c, titulo)
+    for n, item in enumerate(itens, start=1):
+        aba.write(n, 0, int(item.codigo) if item.codigo.isdigit() else item.codigo)
+        aba.write(n, 1, preco_ion(item))
+        aba.write(n, 2, "V")
     arquivo = io.BytesIO()
     pasta.save(arquivo)
     return arquivo.getvalue()

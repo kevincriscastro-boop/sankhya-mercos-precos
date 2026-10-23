@@ -1,0 +1,9 @@
+{# Selo do destino dos preços (Mercos ou ION). Usa o logo se existir em static/marcas/, senão o desenho padrão. #}
+{% macro selo(sistema, pequeno=False) -%}
+{%- set s = sistema or 'mercos' -%}
+<span class="selo selo-{{ s }}{{ ' pequeno' if pequeno }}" title="Preços carregados {{ SISTEMAS[s].onde }}">
+  {%- if LOGOS.get(s) -%}<img src="{{ LOGOS[s] }}" alt="{{ SISTEMAS[s].nome }}">
+  {%- else -%}<span class="selo-marca" aria-hidden="true">{{ 'M' if s == 'mercos' else 'i' }}</span>{%- endif -%}
+  <span class="selo-nome">{{ SISTEMAS[s].nome }}</span>
+</span>
+{%- endmacro %}

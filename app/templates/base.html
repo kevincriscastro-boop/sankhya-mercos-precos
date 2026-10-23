@@ -8,16 +8,19 @@
 </head>
 <body>
 <header class="topo">
-  <a class="marca" href="/">Comercial Interno{% if EMPRESA %} <span>{{ EMPRESA }}</span>{% endif %}</a>
+  <a class="marca" href="/"><span class="marca-icone" aria-hidden="true">CI</span>Comercial Interno{% if EMPRESA %} <small>{{ EMPRESA }}</small>{% endif %}</a>
   {% if usuario %}
+  {% macro item(href, texto) %}<a href="{{ href }}" class="{{ 'ativo' if rota == href or (href != '/' and rota.startswith(href + '/')) }}">{{ texto }}</a>{% endmacro %}
   <nav>
-    {% if usuario.papel in ('gerente', 'admin') %}<a href="/tabelas">Tabelas de preço</a>{% endif %}
-    {% if usuario.papel in ('assistente', 'admin') %}<a href="/importacao">Importação</a><a href="/lotes">Histórico de importações</a>{% endif %}
+    {{ item('/', 'Início') }}
+    {% if usuario.papel in ('gerente', 'admin') %}{{ item('/tabelas', 'Tabelas de preço') }}{% endif %}
+    {% if usuario.papel in ('assistente', 'admin') %}{{ item('/importacao', 'Importação') }}{{ item('/lotes', 'Histórico') }}{% endif %}
     {% if usuario.papel == 'admin' %}
-      <a href="/admin/logs">Log</a><a href="/admin/catalogo">Catálogos</a><a href="/admin/filiais">Filiais</a><a href="/admin/usuarios">Usuários</a><a href="/admin/configuracoes">Configurações</a>
+      {{ item('/admin/filiais', 'Filiais') }}{{ item('/admin/usuarios', 'Usuários') }}{{ item('/admin/catalogo', 'Catálogos') }}{{ item('/admin/logs', 'Log') }}{{ item('/admin/configuracoes', 'Configurações') }}
     {% endif %}
   </nav>
   <div class="quem">
+    <span class="avatar" aria-hidden="true">{{ usuario.nome[:1]|upper }}</span>
     <span>{{ usuario.nome }}{% if usuario.filial_nome %} · {{ usuario.filial_nome }}{% endif %}</span>
     <a href="/senha">Senha</a>
     <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link">Sair</button></form>

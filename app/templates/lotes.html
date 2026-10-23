@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_selos.html" import selo %}
 {% block titulo %}Histórico de importações{% endblock %}
 {% block conteudo %}
 <h1>Histórico de importações</h1>
@@ -15,9 +16,9 @@
   <table>
     <thead><tr><th>#</th><th>Filial</th><th>Por</th><th>Tabela</th><th>Enviado</th><th>Gerado</th><th>Importado</th><th>Situação</th><th>Arquivo</th></tr></thead>
     <tbody>{% for l in lotes %}
-      <tr><td><a href="/lotes/{{ l.id }}">{{ l.id }}</a></td><td>{{ l.filial_nome }}</td><td>{{ l.usuario_nome }}</td>
+      <tr><td><a href="/lotes/{{ l.id }}">{{ l.id }}</a></td><td>{{ l.filial_nome }} {{ selo(l.sistema, pequeno=True) }}</td><td>{{ l.usuario_nome }}</td>
           <td>{{ l.regiao_codigo }} {{ l.vigencia|data_br }}</td><td>{{ l.criado_em|data_br }}</td>
-          <td>{{ l.gerado_em|data_br }}</td><td>{{ l.importado_em|data_br }}</td><td>{{ STATUS_LOTE[l.status] }}</td>
+          <td>{{ l.gerado_em|data_br }}</td><td>{{ l.importado_em|data_br }}</td><td><span class="etiqueta {{ {'importado': 'verde', 'cancelado': 'cinza'}.get(l.status, 'amarela') }}">{{ STATUS_LOTE[l.status] }}</span></td>
           <td>{% if l.arquivo_saida_id %}<a href="/arquivos/{{ l.arquivo_saida_id }}">⬇ baixar</a>{% endif %}</td></tr>
     {% else %}<tr><td colspan="9"><em>Nenhuma importação.</em></td></tr>{% endfor %}</tbody>
   </table>
