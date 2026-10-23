@@ -230,14 +230,14 @@ def main():
 
         # ---- gerente: tabela de setembro publicada, outubro em rascunho
         entrar("ana.gerente", senhas["ana.gerente"], "Gerente12345")
-        for arquivo, vigencia, regiao in ((tabela_set, "2026-09-01", "MG — Minas Gerais"),
-                                          (tabela_out, "2026-10-01", "MG — Minas Gerais"),
+        for arquivo, vigencia, regiao in ((tabela_set, "2026-09-01", "MG — Minas Gerais (ION: sem desconto)"),
+                                          (tabela_out, "2026-10-01", "MG — Minas Gerais (ION: sem desconto)"),
                                           (tabela_set, "2026-09-01", "SP — São Paulo"),
                                           (tabela_out, "2026-10-01", "SP — São Paulo")):
             pagina.goto(f"{URL}/tabelas")
             pagina.select_option("select[name=regiao_id]", label=regiao)
             pagina.fill("input[name=vigencia]", vigencia)
-            pagina.fill("input[name=desconto_max]", "10")
+            pagina.fill("input[name=desconto_max]", "" if regiao.startswith("MG") else "10")  # MG é ION: sem desconto
             pagina.fill("input[name=observacao]", "Reajuste mensal (exemplo)")
             pagina.set_input_files("input[name=arquivo]", str(arquivo))
             pagina.click("button:has-text('Conferir tabela')")

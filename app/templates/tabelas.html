@@ -17,12 +17,13 @@
     <label>Região
       <select id="tabela-regiao" name="regiao_id" required>
         <option value="" selected disabled>escolha a região…</option>
-        {% for r in regioes %}<option value="{{ r.id }}">{{ r.codigo }} — {{ r.nome }}</option>{% endfor %}
+        {% for r in regioes %}<option value="{{ r.id }}">{{ r.codigo }} — {{ r.nome }}{% if r.so_ion %} (ION: sem desconto){% endif %}</option>{% endfor %}
       </select>
     </label>
     <label>Vigência (a partir de) <input type="date" name="vigencia" value="{{ hoje }}" required></label>
-    <label>Desconto máximo do vendedor (%) <input name="desconto_max" inputmode="decimal" placeholder="ex.: 10" required>
-      <span class="nota">Preço Mínimo no Mercos = CIF menos este desconto.</span></label>
+    <label>Desconto máximo do vendedor (%) <input name="desconto_max" inputmode="decimal" placeholder="ex.: 10">
+      <span class="nota">Preço Mínimo no Mercos = CIF menos este desconto. Região só com filiais no ION
+        (ex.: MG) fica em branco: o ION recebe um preço só.</span></label>
     <label class="largo">Observação <input name="observacao" maxlength="500" placeholder="ex.: reajuste das graxas"></label>
     <label class="largo">Planilha (.xlsx) <input type="file" name="arquivo" accept=".xlsx,.xlsm" required></label>
     <div class="largo"><button>Conferir tabela</button>

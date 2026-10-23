@@ -26,8 +26,9 @@
     <dt>Produtos com preço</dt><dd>{{ tabela.total_itens }}</dd>
     <dt>Desconto máximo</dt><dd>{% if tabela.desconto_max is not none %}<strong>{{ tabela.desconto_max|numero }}%</strong>
       <span class="nota">— Preço Mínimo no Mercos = CIF − {{ tabela.desconto_max|numero }}%
-      (ex.: CIF R$ 100,00 → mínimo {{ (100 * (1 - tabela.desconto_max / 100))|moeda }})</span>{% else %}não informado
-      <span class="nota">— sem desconto, o Preço Mínimo usa o FOB da tabela</span>{% endif %}</dd>
+      (ex.: CIF R$ 100,00 → mínimo {{ (100 * (1 - tabela.desconto_max / 100))|moeda }})</span>{% elif filiais_da_regiao and filiais_da_regiao|selectattr('sistema', 'equalto', 'mercos')|list %}não informado
+      <span class="nota">— sem desconto, o Preço Mínimo no Mercos usa o FOB da tabela</span>{% else %}não se aplica
+      <span class="nota">— região só com filiais no ION (vai um preço só: o maior entre CIF e FOB)</span>{% endif %}</dd>
     {% if tabela.observacao %}<dt>Observação</dt><dd>{{ tabela.observacao }}</dd>{% endif %}
     <dt>Leitura</dt><dd>aba "{{ resumo.aba }}", cabeçalho na linha {{ resumo.linha_cabecalho }}; código na coluna {{ resumo.colunas.codigo }}, CIF na {{ resumo.colunas.cif }}, FOB na {{ resumo.colunas.fob }}</dd>
   </dl>

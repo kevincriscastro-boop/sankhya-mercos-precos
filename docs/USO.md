@@ -20,7 +20,8 @@ daquele computador fica bloqueado por 15 minutos.
 
 1. Menu **Tabelas de preço** → **Enviar nova tabela**.
 2. Escolha a **região** (a lista começa vazia, de propósito), a **vigência** (a partir de quando vale) e o **desconto máximo** do vendedor.
-   O desconto é obrigatório: ele define o Preço Mínimo no Mercos (CIF − desconto).
+   O desconto define o Preço Mínimo no Mercos (CIF − desconto) e é obrigatório quando a região tem filial no
+   Mercos. Região só com filiais no **ION** (ex.: MG) fica **sem desconto**: o ION recebe um preço só.
 3. Escolha a planilha `.xlsx` e clique em **Conferir tabela**. A tabela fica em **rascunho**.
 4. Confira a tela:
    - **"Vale para"**: a região escolhida e a lista das filiais que vão receber estes preços. Se não for

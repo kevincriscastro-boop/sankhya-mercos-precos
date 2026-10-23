@@ -347,7 +347,9 @@ def inicio(request: Request):
 @app.get("/tabelas", response_class=HTMLResponse)
 def tabelas(request: Request):
     exigir(request, "gerente")
-    regioes = db.consultar("SELECT * FROM regioes ORDER BY id")
+    regioes = db.consultar(
+        "SELECT r.*, NOT EXISTS (SELECT 1 FROM filiais f WHERE f.regiao_id = r.id AND f.ativo = 1 "
+        "AND f.sistema = 'mercos') AS so_ion FROM regioes r ORDER BY r.id")
     lista = db.consultar(
         "SELECT t.*, r.codigo AS regiao_codigo, u.nome AS usuario_nome FROM tabelas_preco t "
         "JOIN regioes r ON r.id = t.regiao_id JOIN usuarios u ON u.id = t.usuario_id "
@@ -367,7 +369,10 @@ async def enviar_tabela(request: Request, regiao_id: str = Form(""), vigencia: s
         avisar(request, "Escolha a região da tabela (ela define quais filiais recebem os preços).", "erro")
         return ir("/tabelas")
     desconto = planilhas.numero(desconto_max) if desconto_max.strip() else None
-    if desconto is None or not 0 <= desconto < 100:
+    # o desconto só existe no Mercos (Preço Mínimo); região só com filiais ION pode vir sem
+    usa_mercos = db.consultar_um("SELECT 1 FROM filiais WHERE regiao_id = ? AND ativo = 1 AND sistema = 'mercos'",
+                                 (regiao_id,)) is not None
+    if (desconto is None and usa_mercos) or (desconto is not None and not 0 <= desconto < 100):
         avisar(request, "Informe o desconto máximo do vendedor (entre 0 e 99%). Ele define o Preço Mínimo no Mercos.", "erro")
         return ir("/tabelas")
     try:
