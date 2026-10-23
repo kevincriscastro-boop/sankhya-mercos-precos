@@ -370,10 +370,15 @@ async def enviar_tabela(request: Request, regiao_id: str = Form(""), vigencia: s
         return ir("/tabelas")
     desconto = planilhas.numero(desconto_max) if desconto_max.strip() else None
     # o desconto só existe no Mercos (Preço Mínimo); região só com filiais ION pode vir sem
-    usa_mercos = db.consultar_um("SELECT 1 FROM filiais WHERE regiao_id = ? AND ativo = 1 AND sistema = 'mercos'",
-                                 (regiao_id,)) is not None
-    if (desconto is None and usa_mercos) or (desconto is not None and not 0 <= desconto < 100):
-        avisar(request, "Informe o desconto máximo do vendedor (entre 0 e 99%). Ele define o Preço Mínimo no Mercos.", "erro")
+    filiais_mercos = [f["nome"] for f in db.consultar(
+        "SELECT nome FROM filiais WHERE regiao_id = ? AND ativo = 1 AND sistema = 'mercos' ORDER BY nome", (regiao_id,))]
+    if desconto is None and filiais_mercos:
+        avisar(request, f"A região {regiao['codigo']} tem filial no Mercos ({', '.join(filiais_mercos)}): informe o "
+                        "desconto máximo, que define o Preço Mínimo no Mercos. Se a filial é do ION, troque o destino "
+                        "dela em Filiais.", "erro")
+        return ir("/tabelas")
+    if desconto is not None and not 0 <= desconto < 100:
+        avisar(request, "O desconto máximo do vendedor tem que ficar entre 0 e 99%.", "erro")
         return ir("/tabelas")
     try:
         date.fromisoformat(vigencia)

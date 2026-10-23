@@ -4,9 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Comercial Interno{% endblock %}{% if EMPRESA %} · {{ EMPRESA }}{% endif %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/static/estilo.css">
 </head>
-<body>
+<body class="{% block corpo_classe %}{% endblock %}">
 <header class="topo">
   <a class="marca" href="/"><span class="marca-icone" aria-hidden="true">CI</span>Comercial Interno{% if EMPRESA %} <small>{{ EMPRESA }}</small>{% endif %}</a>
   {% if usuario %}

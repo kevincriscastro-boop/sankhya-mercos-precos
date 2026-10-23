@@ -175,19 +175,19 @@
 {% if precos %}
 <section class="cartao">
   <h2>{{ 'Preços diferentes da tabela anterior' if ion else 'Preços alterados' }}</h2>
-  <table class="compacta">
+  <table class="compacta precos">
     {% if ion %}
     <thead><tr><th>Código</th><th>Produto</th><th>VALOR antes</th><th>VALOR novo</th><th>Variação</th></tr></thead>
     <tbody>{% for p in precos %}
       <tr class="{{ 'destaque' if p.var_cif is not none and p.var_cif|abs >= destaque }}">
-        <td>{{ p.codigo }}</td><td>{{ p.nome }}</td><td>{{ p.cif_antes|moeda }}</td><td>{{ p.cif_depois|moeda }}</td><td>{{ p.var_cif|porcentagem }}</td></tr>
+        <td>{{ p.codigo }}</td><td>{{ p.nome }}</td><td>{{ p.cif_antes|moeda }}</td><td>{{ p.cif_depois|moeda }}</td><td class="{{ 'sobe' if p.var_cif and p.var_cif > 0 else ('desce' if p.var_cif and p.var_cif < 0) }}">{{ p.var_cif|porcentagem }}</td></tr>
     {% endfor %}</tbody>
     {% else %}
     <thead><tr><th>Código</th><th>Produto</th><th>CIF antes</th><th>CIF novo</th><th>Variação</th><th>FOB antes</th><th>FOB novo</th><th>Preço mínimo</th></tr></thead>
     <tbody>{% for p in precos %}
       <tr class="{{ 'destaque' if p.var_cif is not none and p.var_cif|abs >= destaque }}">
         <td>{{ p.codigo }}</td><td>{{ p.nome }}</td><td>{{ p.cif_antes|moeda }}</td><td>{{ p.cif_depois|moeda }}</td>
-        <td>{{ p.var_cif|porcentagem }}</td><td>{{ p.fob_antes|moeda }}</td><td>{{ p.fob_depois|moeda }}</td><td>{{ p.min_depois|moeda }}</td></tr>
+        <td class="{{ 'sobe' if p.var_cif and p.var_cif > 0 else ('desce' if p.var_cif and p.var_cif < 0) }}">{{ p.var_cif|porcentagem }}</td><td>{{ p.fob_antes|moeda }}</td><td>{{ p.fob_depois|moeda }}</td><td>{{ p.min_depois|moeda }}</td></tr>
     {% endfor %}</tbody>
     {% endif %}
   </table>

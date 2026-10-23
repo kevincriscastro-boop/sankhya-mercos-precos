@@ -73,11 +73,11 @@
     {% if resumo.retirados %}<p class="nota">Saíram: {{ resumo.retirados|join(', ') }}</p>{% endif %}
     {% if resumo.novos %}<p class="nota">Novos: {{ resumo.novos|join(', ') }}</p>{% endif %}
     {% if resumo.variacoes %}
-    <table>
+    <table class="precos">
       <thead><tr><th>Código</th><th>Produto</th><th>CIF antes</th><th>CIF novo</th><th>Variação</th><th>FOB antes</th><th>FOB novo</th></tr></thead>
       <tbody>{% for v in resumo.variacoes %}
         <tr class="{{ 'destaque' if v.var|abs >= destaque }}"><td>{{ v.codigo }}</td><td>{{ v.nome }}</td>
-          <td>{{ v.cif_antes|moeda }}</td><td>{{ v.cif|moeda }}</td><td>{{ v.var|porcentagem }}</td>
+          <td>{{ v.cif_antes|moeda }}</td><td>{{ v.cif|moeda }}</td><td class="{{ 'sobe' if v.var > 0 else 'desce' }}">{{ v.var|porcentagem }}</td>
           <td>{{ v.fob_antes|moeda }}</td><td>{{ v.fob|moeda }}</td></tr>
       {% endfor %}</tbody>
     </table>
