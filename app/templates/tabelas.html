@@ -57,7 +57,7 @@
     function ajustar() {
       var opcao = regiao.options[regiao.selectedIndex];
       var soIon = opcao && opcao.dataset.soIon === "1";
-      document.getElementById("campo-desconto").hidden = soIon;
+      document.getElementById("campo-desconto").style.display = soIon ? "none" : "";
       document.getElementById("aviso-ion").hidden = !soIon;
       if (soIon) document.getElementById("tabela-desconto").value = "";
     }

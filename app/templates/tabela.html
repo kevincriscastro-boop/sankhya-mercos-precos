@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% from "_selos.html" import selo %}
+{% set destinos = filiais_da_regiao|map(attribute='sistema')|unique|list %}
+{% set nomes_destino = [] %}{% for d in destinos %}{% set _ = nomes_destino.append(SISTEMAS[d].nome) %}{% endfor %}
+{% set onde_regiao = nomes_destino|join(' e ') or 'Mercos' %}
 {% block titulo %}Tabela #{{ tabela.id }}{% endblock %}
 {% block conteudo %}
 <h1>Tabela #{{ tabela.id }} — {{ tabela.regiao_nome }}, vigência {{ tabela.vigencia|data_br }}
@@ -50,14 +53,16 @@
     {% endfor %}</tbody>
   </table>
   <p>O ideal é corrigir a planilha (uma linha por código) e enviar de novo. Se publicar assim mesmo,
-     <strong>esses códigos ficam fora da tabela</strong> e mantêm no Mercos o preço que já têm.</p>
+     <strong>esses códigos ficam fora da tabela</strong> e mantêm no {{ onde_regiao }} o preço que já têm.</p>
 </section>
 {% endif %}
 
 {% if resumo.sem_preco %}
 <section class="cartao alerta-borda">
   <h2>Produtos sem preço ({{ resumo.sem_preco|length }})</h2>
-  <p>Vão como <strong>inativos</strong> no Mercos se ficarem assim.</p>
+  <p>{% if 'mercos' in destinos %}Vão como <strong>inativos</strong> no Mercos se ficarem assim.{% endif %}
+     {% if 'ion' in destinos %}{% if 'mercos' in destinos %}<br>{% endif %}No ION, <strong>ficam fora</strong> da planilha do Sankhya (mantêm o preço atual).{% endif %}
+     {% if not destinos %}Ficam sem preço se ficarem assim.{% endif %}</p>
   <p class="nota">{% for s in resumo.sem_preco %}{{ s.codigo }} {{ s.nome }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
 </section>
 {% endif %}

@@ -70,8 +70,10 @@ def data_br(texto) -> str:
 
 templates.env.filters.update(moeda=moeda, porcentagem=porcentagem, data_br=data_br,
                              numero=lambda v: f"{v:g}".replace(".", ","))
+# versão do CSS no endereço: a cada mudança o navegador baixa o arquivo novo em vez de usar o do cache
+VERSAO_ESTILO = int((PASTA_APP / "static" / "estilo.css").stat().st_mtime)
 templates.env.globals.update(PAPEIS=PAPEIS, STATUS_LOTE=STATUS_LOTE, STATUS_TABELA=STATUS_TABELA,
-                             SISTEMAS=SISTEMAS, LOGOS=LOGOS, EMPRESA=config.EMPRESA)
+                             SISTEMAS=SISTEMAS, LOGOS=LOGOS, EMPRESA=config.EMPRESA, VERSAO_ESTILO=VERSAO_ESTILO)
 
 
 # ------------------------------------------------------------------ apoio
