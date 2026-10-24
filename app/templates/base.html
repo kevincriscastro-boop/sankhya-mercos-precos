@@ -9,7 +9,45 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/static/estilo.css?v={{ VERSAO_ESTILO }}">
 </head>
-<body class="{% block corpo_classe %}{% endblock %} tema-{% block tema %}neutro{% endblock %}">
+{% set tema = self.tema()|trim %}
+<body class="{% block corpo_classe %}{% endblock %} tema-{% block tema %}neutro{% endblock %}" data-tema="{{ tema }}">
+{% for chave, sistema in SISTEMAS.items() %}
+<div class="revela revela-{{ chave }}" id="revela-{{ chave }}" aria-hidden="true">
+  <div class="revela-caixa">
+    <div class="revela-marca">{% if LOGOS.get(chave) %}<img src="{{ LOGOS[chave] }}" alt="">{% else %}{{ 'M' if chave == 'mercos' else 'i' }}{% endif %}</div>
+    <div class="revela-nome">{{ sistema.nome }}</div>
+    <div class="revela-nota">preços carregados {{ sistema.onde }}</div>
+  </div>
+</div>
+{% endfor %}
+<script>
+  // Troca de tema suave (cores registradas com @property deslizam de uma paleta para a outra).
+  // A página nasce com o tema da tela anterior e desliza para o dela; ao mudar de destino,
+  // o logo do Mercos ou do ION aparece grande por um instante. Telas usam trocarTema() ao vivo.
+  (function () {
+    var corpo = document.body, reduzir = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function atual() { var m = corpo.className.match(/tema-(\w+)/); return m ? m[1] : "neutro"; }
+    function revelar(tema) {
+      var el = document.getElementById("revela-" + tema);
+      if (!el || reduzir) return;
+      el.classList.remove("ativo"); void el.offsetWidth; el.classList.add("ativo");
+    }
+    window.trocarTema = function (novo) {
+      var antes = atual();
+      if (novo === antes) return;
+      corpo.classList.replace("tema-" + antes, "tema-" + novo);
+      revelar(novo);
+      try { sessionStorage.setItem("tema", novo); } catch (e) {}
+    };
+    var novo = corpo.dataset.tema, antes = null;
+    try { antes = sessionStorage.getItem("tema"); sessionStorage.setItem("tema", novo); } catch (e) {}
+    if (reduzir || !antes || antes === novo) { if (!antes && novo !== "neutro") revelar(novo); return; }
+    corpo.classList.replace("tema-" + novo, "tema-" + antes);
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      corpo.classList.replace("tema-" + antes, "tema-" + novo); revelar(novo);
+    }); });
+  })();
+</script>
 <header class="topo">
   <a class="marca" href="/"><span class="marca-icone" aria-hidden="true">CI</span>Comercial Interno{% if EMPRESA %} <small>{{ EMPRESA }}</small>{% endif %}</a>
   {% if usuario %}

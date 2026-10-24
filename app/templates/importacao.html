@@ -10,9 +10,9 @@
 {% elif usuario.papel == 'admin' %}
 <form method="get" action="/importacao" class="seletor-filial">
   <label>Filial
-    <select id="escolha-filial" name="filial" onchange="this.form.submit()">
+    <select id="escolha-filial" name="filial" onchange="trocarTema(this.selectedOptions[0].dataset.tema || 'neutro'); var f = this.form; setTimeout(function () { f.submit(); }, 650)">
       <option value="">escolha…</option>
-      {% for f in filiais %}<option value="{{ f.id }}" {% if filial and f.id == filial.id %}selected{% endif %}>{{ f.nome }} — {{ SISTEMAS[f.sistema].nome }}</option>{% endfor %}
+      {% for f in filiais %}<option value="{{ f.id }}" data-tema="{{ f.sistema }}" {% if filial and f.id == filial.id %}selected{% endif %}>{{ f.nome }} — {{ SISTEMAS[f.sistema].nome }}</option>{% endfor %}
     </select>
   </label>
 </form>

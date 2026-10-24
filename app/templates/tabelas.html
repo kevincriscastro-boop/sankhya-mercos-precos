@@ -17,7 +17,7 @@
     <label>Região
       <select id="tabela-regiao" name="regiao_id" required>
         <option value="" selected disabled>escolha a região…</option>
-        {% for r in regioes %}<option value="{{ r.id }}" data-so-ion="{{ 1 if r.so_ion else 0 }}">{{ r.codigo }} — {{ r.nome }}{% if r.so_ion %} (ION){% endif %}</option>{% endfor %}
+        {% for r in regioes %}<option value="{{ r.id }}" data-so-ion="{{ 1 if r.so_ion else 0 }}" data-tema="{{ r.destinos if r.destinos in ('mercos', 'ion') else 'neutro' }}">{{ r.codigo }} — {{ r.nome }}{% if r.so_ion %} (ION){% endif %}</option>{% endfor %}
       </select>
     </label>
     <label>Vigência (a partir de) <input type="date" name="vigencia" value="{{ hoje }}" required></label>
@@ -60,6 +60,7 @@
       document.getElementById("campo-desconto").style.display = soIon ? "none" : "";
       document.getElementById("aviso-ion").hidden = !soIon;
       if (soIon) document.getElementById("tabela-desconto").value = "";
+      if (window.trocarTema) trocarTema((opcao && opcao.dataset.tema) || "neutro");
     }
     regiao.addEventListener("change", ajustar);
     ajustar();

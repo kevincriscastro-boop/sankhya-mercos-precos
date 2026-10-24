@@ -1,34 +1,42 @@
 /* Comercial Interno — tema escuro.
    O fundo é sempre o mesmo (grafite). Só a cor de destaque muda com a tela:
    neutra (padrão), roxo do Mercos (body.tema-mercos) ou verde do ION (body.tema-ion). */
+/* As três cores de destaque são registradas: assim o navegador consegue animar a troca de tema. */
+@property --p { syntax: '<color>'; inherits: true; initial-value: #6ea8ff; }
+@property --p-forte { syntax: '<color>'; inherits: true; initial-value: #2f6fdb; }
+@property --p-escura { syntax: '<color>'; inherits: true; initial-value: #1e3a8a; }
+@property --tinta { syntax: '<percentage>'; inherits: true; initial-value: 0%; }
 :root {
   color-scheme: dark;
-  --fundo: #0b0d12; --fundo-2: #11141b; --cartao: #151920; --cartao-2: #1b2029; --campo: #0e1117;
-  --borda: #272d39; --linha: #1f242e; --texto: #e8ebf1; --suave: #a1a9b8; --fraco: #6b7384;
+  --texto: #e8edf6; --suave: #a3afc4; --fraco: #6c7a93;
   --verde: #34d399; --verde-fundo: rgba(52, 211, 153, .12);
   --amarelo: #fbbf24; --amarelo-fundo: rgba(251, 191, 36, .12);
   --vermelho: #f87171; --vermelho-fundo: rgba(248, 113, 113, .12);
   --raio: 16px;
   --sombra: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 10px 30px -18px rgba(0, 0, 0, .9);
-  /* destaque neutro (telas gerais) */
-  --p: #9fb3d1; --p-forte: #5b6b86; --p-escura: #2c3546;
-  --p-fundo: rgba(159, 179, 209, .1); --p-borda: rgba(159, 179, 209, .28); --p-brilho: rgba(60, 75, 100, .55);
-  --p-grad: linear-gradient(135deg, #5d6e8c, #2c3546);
 }
-body.tema-mercos {
-  --p: #a07bff; --p-forte: #7a4fe0; --p-escura: #4b2a85;
-  --p-fundo: rgba(160, 123, 255, .13); --p-borda: rgba(160, 123, 255, .35); --p-brilho: rgba(122, 79, 224, .45);
-  --p-grad: linear-gradient(135deg, #8a5cf0, #4b2a85);
-}
-body.tema-ion {
-  --p: #3ee0b4; --p-forte: #12a882; --p-escura: #0b6b55;
-  --p-fundo: rgba(62, 224, 180, .12); --p-borda: rgba(62, 224, 180, .32); --p-brilho: rgba(18, 168, 130, .4);
-  --p-grad: linear-gradient(135deg, #1fc79b, #0b6b55);
-}
+/* destaque: neutro (azul), Mercos (roxo) ou ION (verde). Os tons derivados saem das três cores. */
+/* --tinta: quanto a paleta do destino "pinta" fundo, cartões e bordas (0% no neutro) */
+body { --p: #6ea8ff; --p-forte: #2f6fdb; --p-escura: #1e3a8a; --tinta: 0%;
+  --fundo: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .45), #0a0e17);
+  --fundo-2: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .6), #0f1522);
+  --cartao: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .55), #121a2a);
+  --cartao-2: color-mix(in srgb, var(--p-forte) calc(var(--tinta) * .6), #182236);
+  --campo: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .45), #0c121e);
+  --borda: color-mix(in srgb, var(--p) var(--tinta), #243049);
+  --linha: color-mix(in srgb, var(--p) calc(var(--tinta) * .6), #1b2539);
+  --p-fundo: color-mix(in srgb, var(--p) 13%, transparent); --p-borda: color-mix(in srgb, var(--p) 34%, transparent);
+  --p-brilho: color-mix(in srgb, var(--p-forte) 50%, transparent); --p-grad: linear-gradient(135deg, var(--p-forte), var(--p-escura));
+  transition: --p .7s ease, --p-forte .7s ease, --p-escura .7s ease, --tinta .7s ease; }
+body.tema-mercos { --p: #a07bff; --p-forte: #8a5cf0; --p-escura: #4b2a85; --tinta: 55%; }
+body.tema-ion { --p: #3ee0b4; --p-forte: #1fc79b; --p-escura: #0b6b55; --tinta: 55%; }
+
 * { box-sizing: border-box; }
 html { -webkit-font-smoothing: antialiased; }
 body { margin: 0; min-height: 100vh; color: var(--texto); font: 15px/1.55 Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  background: radial-gradient(1100px 420px at 50% -160px, var(--p-fundo), transparent 70%), var(--fundo); background-attachment: fixed; }
+  background: radial-gradient(1100px 460px at 50% -160px, var(--p-fundo), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, color-mix(in srgb, var(--p) calc(var(--tinta) * .35), transparent), transparent 70%), var(--fundo);
+  background-attachment: fixed; }
 a { color: var(--p); text-underline-offset: 3px; }
 h1 { font-size: 1.7rem; font-weight: 800; margin: 0 0 1.4rem; display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; letter-spacing: -.02em; }
 h2 { font-size: 1.06rem; font-weight: 700; margin: 0 0 .9rem; letter-spacing: -.01em; }
@@ -39,7 +47,8 @@ code { background: var(--cartao-2); color: var(--p); padding: .1rem .4rem; borde
 
 /* ---------- topo */
 .topo { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; padding: .7rem 2rem; position: sticky; top: 0; z-index: 10;
-  background: rgba(13, 11, 20, .78); backdrop-filter: blur(12px); border-bottom: 1px solid var(--borda); }
+  background: color-mix(in srgb, var(--fundo) 80%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--borda);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--p) var(--tinta), transparent); }
 .topo a { text-decoration: none; }
 .marca { font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: .65rem; white-space: nowrap; color: #fff; letter-spacing: -.01em; }
 .marca small { font-weight: 500; color: var(--suave); font-size: .8rem; }
@@ -228,7 +237,7 @@ ul.nota { padding-left: 1.1rem; display: flex; flex-direction: column; gap: .45r
 .login { display: grid; grid-template-columns: 1.1fr 1fr; width: 100%; border-radius: 24px; overflow: hidden; background: var(--cartao);
   border: 1px solid var(--borda); box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .02); }
 .login-lado { padding: 3rem 2.8rem; display: flex; flex-direction: column; justify-content: center; gap: 1rem;
-  background: radial-gradient(500px 320px at 0% 0%, rgba(159, 179, 209, .25), transparent 70%), linear-gradient(150deg, #2a3242, #10131a); }
+  background: radial-gradient(500px 320px at 0% 0%, rgba(110, 168, 255, .35), transparent 70%), linear-gradient(150deg, #1c3263, #0a0f1d); }
 .login-lado h1 { color: #fff; margin: .4rem 0 0; font-size: 2rem; }
 .login-lado p { margin: 0; color: rgba(255, 255, 255, .78); font-size: 1.02rem; line-height: 1.6; }
 .login-lado .marca-icone { background: rgba(255, 255, 255, .14); box-shadow: none; }
@@ -236,6 +245,22 @@ ul.nota { padding-left: 1.1rem; display: flex; flex-direction: column; gap: .45r
 .login-cartao h2 { font-size: 1.45rem; font-weight: 800; margin-bottom: 1.4rem; }
 .login-cartao input { height: 46px; }
 .login-cartao button { height: 48px; margin-top: .4rem; }
+
+/* ---------- logo do destino ao trocar de tema */
+.revela { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; pointer-events: none; opacity: 0; }
+.revela.ativo { animation: revela-fundo 1.5s ease forwards; }
+.revela-caixa { display: flex; flex-direction: column; align-items: center; gap: 1rem; transform: scale(.7); }
+.revela.ativo .revela-caixa { animation: revela-logo 1.5s cubic-bezier(.2, .9, .3, 1.2) forwards; }
+.revela-marca { display: grid; place-items: center; width: 128px; height: 128px; border-radius: 36px; color: #fff; font-size: 3.4rem; font-weight: 800;
+  background: var(--p-grad); box-shadow: 0 0 0 10px var(--p-fundo), 0 30px 80px -10px var(--p-brilho); }
+.revela-marca img { width: 84px; height: 84px; object-fit: contain; }
+.revela-ion .revela-marca { font-style: italic; font-family: Georgia, serif; }
+.revela-nome { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+.revela-nota { color: var(--suave); font-size: .95rem; margin-top: -.6rem; }
+@keyframes revela-fundo { 0% { opacity: 0; background: rgba(5, 8, 14, 0); } 18% { opacity: 1; background: rgba(5, 8, 14, .72); }
+  70% { opacity: 1; background: rgba(5, 8, 14, .72); } 100% { opacity: 0; background: rgba(5, 8, 14, 0); } }
+@keyframes revela-logo { 0% { transform: scale(.7); } 22% { transform: scale(1); } 70% { transform: scale(1); } 100% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { body { transition: none; } .revela { display: none; } }
 
 [hidden] { display: none !important; }
 

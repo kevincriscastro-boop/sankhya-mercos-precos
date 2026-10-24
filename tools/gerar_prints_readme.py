@@ -163,7 +163,8 @@ def main():
 
     with sync_playwright() as p:
         navegador = p.chromium.launch()
-        pagina = navegador.new_page(viewport={"width": 1366, "height": 860}, device_scale_factor=1)
+        pagina = navegador.new_page(viewport={"width": 1366, "height": 860}, device_scale_factor=1,
+                                      reduced_motion="reduce")  # prints sem a animação de troca de tema
 
         def foto(nome, inteira=False, recorte=None):
             caminho = PASTA_PRINTS / f"{nome}.png"

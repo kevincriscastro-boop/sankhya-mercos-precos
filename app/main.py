@@ -351,7 +351,9 @@ def tabelas(request: Request):
     exigir(request, "gerente")
     regioes = db.consultar(
         "SELECT r.*, NOT EXISTS (SELECT 1 FROM filiais f WHERE f.regiao_id = r.id AND f.ativo = 1 "
-        "AND f.sistema = 'mercos') AS so_ion FROM regioes r ORDER BY r.id")
+        "AND f.sistema = 'mercos') AS so_ion, "
+        "(SELECT GROUP_CONCAT(DISTINCT f.sistema) FROM filiais f WHERE f.regiao_id = r.id AND f.ativo = 1) AS destinos "
+        "FROM regioes r ORDER BY r.id")
     lista = db.consultar(
         "SELECT t.*, r.codigo AS regiao_codigo, u.nome AS usuario_nome FROM tabelas_preco t "
         "JOIN regioes r ON r.id = t.regiao_id JOIN usuarios u ON u.id = t.usuario_id "
