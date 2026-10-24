@@ -97,8 +97,13 @@ No ION não há exportação para enviar: a planilha sai direto da tabela vigent
 1. No app, menu **Importação** → **Gerar planilha para o Sankhya (ION)**.
 2. Baixe a planilha (`.xls`, colunas **CODPROD · VALOR · TIPO**). **VALOR** é o **maior** preço da tabela
    do gerente para cada produto (CIF ou FOB), e **TIPO** é sempre **V**. Vai a tabela inteira.
-3. No Sankhya, suba o arquivo no **importador de tabelas** e confira se ele leu o número de produtos que o
-   app mostra.
+3. No Sankhya (tela **Importador Tabela Preço**, personalizada):
+   1. a vigência nova precisa existir antes em **Tabelas de Preços** (ela gera o **NUTAB**, o "Nro Tabela");
+   2. crie (ou abra) o registro do importador com esse **Nro Tabela**;
+   3. **clipe (Anexos) → + Anexo**: descrição (ex.: "ATUALIZAÇÃO ION MG OUT 2026") e o `.xls` do app → ✓;
+   4. **raio ⚡ → Importar planilha**: a aba IMPORTAITEM tem que mostrar o número de produtos do app;
+   5. **raio ⚡ → Insere valores** (uma vez só): aparece "Tabela atualizada com sucesso!";
+   6. confira no DBExplorer: `SELECT COUNT(*) FROM TGFEXC WHERE NUTAB = <Nro Tabela>` = número de produtos.
 4. Volte ao app, marque a caixa de conferência e clique em **Confirmar importação**.
 
 A tela também compara com a tabela anterior da região: o que mudou e as variações acima de 5%.

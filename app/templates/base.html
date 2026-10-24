@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/static/estilo.css?v={{ VERSAO_ESTILO }}">
 </head>
-<body class="{% block corpo_classe %}{% endblock %}">
+<body class="{% block corpo_classe %}{% endblock %} tema-{% block tema %}neutro{% endblock %}">
 <header class="topo">
   <a class="marca" href="/"><span class="marca-icone" aria-hidden="true">CI</span>Comercial Interno{% if EMPRESA %} <small>{{ EMPRESA }}</small>{% endif %}</a>
   {% if usuario %}

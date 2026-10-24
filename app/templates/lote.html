@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_selos.html" import selo %}
 {% block titulo %}Importação #{{ lote.id }}{% endblock %}
+{% block tema %}{{ lote.sistema or 'mercos' }}{% endblock %}
 {% block conteudo %}
 {% set ion = lote.sistema == 'ion' %}
 <h1>Importação #{{ lote.id }} — {{ lote.filial_nome }} {{ selo(lote.sistema) }}

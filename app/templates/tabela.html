@@ -4,6 +4,7 @@
 {% set nomes_destino = [] %}{% for d in destinos %}{% set _ = nomes_destino.append(SISTEMAS[d].nome) %}{% endfor %}
 {% set onde_regiao = nomes_destino|join(' e ') or 'Mercos' %}
 {% block titulo %}Tabela #{{ tabela.id }}{% endblock %}
+{% block tema %}{{ 'ion' if destinos == ['ion'] else ('mercos' if destinos == ['mercos'] else 'neutro') }}{% endblock %}
 {% block conteudo %}
 <h1>Tabela #{{ tabela.id }} — {{ tabela.regiao_nome }}, vigência {{ tabela.vigencia|data_br }}
   <span class="etiqueta {{ 'verde' if tabela.status == 'publicada' else ('amarela' if tabela.status == 'rascunho' else 'cinza') }}">{{ STATUS_TABELA[tabela.status] }}</span></h1>
