@@ -1,13 +1,41 @@
-# Comercial Interno: tabelas de preço no Mercos, sem susto
+# Comercial Interno: tabelas de preço no Mercos e no ION, sem susto
 
-App web interno que prepara a **importação de tabelas de preço no Mercos** para empresas que
-integram **Sankhya × Mercos** pelo connector da **Corpcloud**: o gerente publica a tabela do mês,
-cada assistente gera o arquivo da própria filial, e tudo fica registrado.
+App web interno que leva a **tabela de preço do gerente** até onde os vendedores trabalham: o
+**Mercos** (integrado ao Sankhya pelo connector da **Corpcloud**) ou o **ION** (que lê os preços do
+próprio Sankhya, carregados pelo importador de tabelas). O gerente publica a tabela do mês, cada
+assistente gera o arquivo da própria filial, no formato certo para o destino dela, e tudo fica registrado.
 
 O objetivo é tirar do TI uma tarefa repetitiva e arriscada: **o gerente e as assistentes passam a
 fazer a atualização de preços sozinhos**, com o app conferindo cada passo, e o TI só acompanha.
 
-![Conferência de uma importação](docs/screenshots/importacao-conferencia.png)
+![Tela de login](docs/screenshots/login.png)
+
+## Mercos ou ION: o que muda
+
+Cada filial é cadastrada com um **destino**. O app adapta o caminho e a tela inteira ao destino:
+roxo para o Mercos, verde para o ION (as telas gerais ficam em azul).
+
+| | **Mercos** | **ION** |
+|---|---|---|
+| Onde o preço entra | No catálogo do Mercos da filial, por **importação de planilha** | No **Sankhya** (tabela de preço da filial), pelo **importador de tabelas**; o ION lê de lá |
+| O que a assistente envia ao app | A **exportação do Mercos** da própria filial | Nada: a planilha sai direto da tabela publicada |
+| Arquivo gerado | `.xlsx` no modelo do Mercos, **só com os produtos cujo preço muda** | `.xls` com **CODPROD · VALOR · TIPO**, **a tabela inteira** |
+| Preço enviado | Preço de Tabela = CIF; Preço Mínimo = CIF − desconto máximo; CIF e FOB nas tabelas 1 e 2 | **Um preço só:** o maior entre CIF e FOB |
+| Desconto máximo do gerente | Obrigatório (define o Preço Mínimo) | Não se aplica (o campo some) |
+| Limpeza do catálogo | Linhas sem código e códigos duplicados ficam fora; produto que não existe na filial nunca é criado | Não há catálogo para limpar |
+| Conferência antes de confirmar | Passo 3 do Mercos: **0 novos · N atualizados · 0 substituirão · 0 excluídos** | O importador do Sankhya tem que ler **N produtos**; depois, `COUNT(*)` na `TGFEXC` da vigência |
+| Guia | [USO.md, filial no Mercos](docs/USO.md#filial-no-mercos) | [USO.md, filial no ION](docs/USO.md#filial-no-ion-importador-de-tabelas-do-sankhya) |
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/importacao.png" alt="Filial no Mercos: tabela pronta para importar"></td>
+    <td><img src="docs/screenshots/importacao-ion.png" alt="Filial no ION: planilha do Sankhya"></td>
+  </tr>
+  <tr>
+    <td align="center">Filial no Mercos: envia a exportação da filial</td>
+    <td align="center">Filial no ION: gera a planilha do Sankhya direto</td>
+  </tr>
+</table>
 
 ## O problema
 
@@ -63,8 +91,10 @@ feita por quem conhece os preços e com as travas que antes dependiam da experi�
   tabela do gerente ficam **fora** do arquivo, cada um com o motivo.
 - **Só o que muda:** o arquivo leva apenas os produtos cujo preço muda. Estoque vai em branco
   (o Mercos mantém o atual) e NCM, unidade, categoria etc. seguem exatamente como estão.
-- **Regra de preço:** Preço de Tabela = CIF; Preço Mínimo = CIF menos o desconto máximo
-  (configurável para usar o FOB); arredondamento comercial.
+- **Regra de preço:** no Mercos, Preço de Tabela = CIF e Preço Mínimo = CIF menos o desconto máximo
+  (configurável para usar o FOB); no ION, o maior entre CIF e FOB. Arredondamento comercial.
+- **Visual por destino:** tema escuro; a tela assume a cor do Mercos (roxo) ou do ION (verde) com uma
+  transição suave e o logo do destino em destaque, para ninguém subir o arquivo no lugar errado.
 - **Travas contra os erros conhecidos:** exportação que parece de outra filial gera alerta;
   produto que não existe na filial nunca é criado pela planilha; confirmar a importação exige
   marcar a conferência do passo 3.
@@ -86,12 +116,12 @@ feita por quem conhece os preços e com as travas que antes dependiam da experi�
     <td align="center">Arquivo gerado: próximo passo no Mercos</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/importacao.png" alt="Filial no Mercos: tabela pronta para importar"></td>
-    <td><img src="docs/screenshots/importacao-ion.png" alt="Filial no ION: planilha do Sankhya"></td>
+    <td><img src="docs/screenshots/importacao-conferencia.png" alt="Conferência de uma importação do Mercos"></td>
+    <td><img src="docs/screenshots/importacao-ion-gerada.png" alt="Planilha do ION gerada"></td>
   </tr>
   <tr>
-    <td align="center">Filial no Mercos: tabela pronta para importar</td>
-    <td align="center">Filial no ION: planilha do importador do Sankhya</td>
+    <td align="center">Mercos: conferência (limpeza, avisos, preços que mudam)</td>
+    <td align="center">ION: planilha gerada e comparação com a tabela anterior</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/inicio.png" alt="Tela inicial do administrador"></td>
@@ -117,19 +147,22 @@ flowchart TD
         N["nginx: HTTPS e só IPs da empresa"] --> APP["Comercial Interno (FastAPI, porta interna 8100)"]
         APP --> DB[("Banco SQLite, planilhas e log")]
     end
-    APP -->|"passo 3: arquivo de importação"| A
-    A -->|"passo 4: Importar produtos, opção Atualizar"| M["Mercos da filial"]
+    APP -->|"passo 3: arquivo da filial"| A
+    A -->|"Mercos: Importar produtos, opção Atualizar"| M["Mercos da filial"]
+    A -->|"ION: importador de tabelas"| S
     S["Sankhya"] -->|"produtos e estoque (connector Corpcloud)"| M
     M -->|"pedidos (connector Corpcloud)"| S
+    S -->|"tabela de preço da filial"| I["ION"]
 ```
 
-O preço é a única coisa que **não** passa pela integração Sankhya × Mercos: ele entra no Mercos
-por planilha. É essa etapa que o app cuida. Detalhes em [docs/INTEGRACAO.md](docs/INTEGRACAO.md).
+No Mercos, o preço é a única coisa que **não** passa pela integração Sankhya × Mercos: entra por
+planilha. No ION, ele entra no Sankhya pelo importador de tabelas e o ION lê de lá. Essas são as etapas
+que o app cuida. Detalhes em [docs/INTEGRACAO.md](docs/INTEGRACAO.md).
 
 | Peça | Papel |
 |---|---|
 | [`app/main.py`](app/main.py) | Rotas, telas, permissões e log de acesso |
-| [`app/planilhas.py`](app/planilhas.py) | Leitura das planilhas, limpeza, preços e geração dos `.xlsx` |
+| [`app/planilhas.py`](app/planilhas.py) | Leitura das planilhas, limpeza, preços e geração dos arquivos (`.xlsx` do Mercos, `.xls` do ION) |
 | [`app/db.py`](app/db.py) | Esquema do banco SQLite |
 | [`app/auditoria.py`](app/auditoria.py) | Registro de eventos e guarda de arquivos com SHA-256 |
 | [`app/seguranca.py`](app/seguranca.py) | Senhas (PBKDF2), sessão, CSRF, IP real atrás do nginx |

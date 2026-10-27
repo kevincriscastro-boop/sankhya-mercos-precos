@@ -1,4 +1,4 @@
-# Integração Sankhya × Mercos (connector Corpcloud)
+# Integração: Sankhya × Mercos (connector Corpcloud) e Sankhya × ION
 
 Como os três sistemas conversam, o que **não** passa pela integração e o que fazer quando um pedido
 não integra. Tudo aqui foi confirmado em produção (outubro/2026) com o suporte da Corpcloud, o suporte
@@ -138,13 +138,42 @@ SELECT CODEMP, CODLOCAL, CODPROD, CONTROLE, ESTOQUE, RESERVADO, DTVAL
  ORDER BY CONTROLE
 ```
 
+## Filiais no ION (sem connector)
+
+O ION não recebe planilha nem tem catálogo próprio para limpar: ele lê os preços da **tabela de preço da
+filial no Sankhya**. Por isso o caminho é outro:
+
+| Peça no Sankhya | O que é |
+|---|---|
+| `TGFTAB` (**TGF** + **TAB**ela) | Cada **vigência** de uma tabela; cada uma tem um **NUTAB** ("Nro Tabela"). Ex.: tabela 24 "KR MINAS GERAIS" |
+| `TGFEXC` (**EXC**eções) | Os **preços produto a produto** daquela vigência. É o que o importador preenche |
+| Tela **Importador Tabela Preço** (personalizada) | Recebe a planilha CODPROD · VALOR · TIPO, mostra os itens (aba IMPORTAITEM) e grava na `TGFEXC` |
+
+Passo a passo (também em [USO.md](USO.md#filial-no-ion-importador-de-tabelas-do-sankhya)):
+
+1. Em **Tabelas de Preços**, crie a vigência nova da tabela da filial (gera o NUTAB).
+2. No **Importador Tabela Preço**, crie um registro com esse **Nro Tabela**.
+3. **Clipe (Anexos) → + Anexo** com o `.xls` gerado pelo app.
+4. **Raio ⚡ → Importar planilha** (a IMPORTAITEM tem que mostrar o número de produtos do app).
+5. **Raio ⚡ → Insere valores**, uma vez só ("Tabela atualizada com sucesso!").
+6. Confira no DBExplorer (troque o 404 pelo NUTAB da vigência; tem que dar o número de produtos do app):
+
+```sql
+SELECT COUNT(*) AS QTD_PRODUTOS
+  FROM TGFEXC
+ WHERE NUTAB = 404
+```
+
+> **Atenção à vigência:** criada a vigência nova, ela passa a valer na data dela mesmo vazia. Importe os
+> preços no mesmo dia (ou crie a vigência com data futura). Use a **mesma data** no app e no Sankhya.
+
 ## Quem resolve o quê
 
 | Assunto | Quem |
 |---|---|
 | Vínculo de produto e de estoque, pedidos que não integram, logs da integração | **Corpcloud** |
 | Importação por planilha, catálogo (duplicados, sem código), tabelas de preço | **Mercos** (o Mercos não guarda log da integração) |
-| App Comercial Interno, consultas no Sankhya, primeiro contato | **TI** |
+| App Comercial Interno, consultas no Sankhya, importador de tabelas (ION), primeiro contato | **TI** |
 
 ## Glossário
 
