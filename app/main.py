@@ -136,7 +136,9 @@ def filial_do_pedido(usuario, filial_id: int | None):
 
 def carregar_lote(lote_id: int, usuario):
     lote = db.consultar_um(
-        "SELECT l.*, f.codigo AS filial_codigo, f.nome AS filial_nome, f.sistema, u.nome AS usuario_nome, "
+        "SELECT l.*, f.codigo AS filial_codigo, f.nome AS filial_nome, u.nome AS usuario_nome, "
+        # destino da própria importação (a filial pode trocar de Mercos para ION depois)
+        "CASE WHEN l.resumo_json LIKE '%\"sistema\": \"ion\"%' THEN 'ion' ELSE 'mercos' END AS sistema, "
         "t.vigencia, t.desconto_max, r.codigo AS regiao_codigo "
         "FROM lotes l JOIN filiais f ON f.id = l.filial_id JOIN usuarios u ON u.id = l.usuario_id "
         "JOIN tabelas_preco t ON t.id = l.tabela_id JOIN regioes r ON r.id = t.regiao_id WHERE l.id = ?",
@@ -697,7 +699,7 @@ def lista_lotes(request: Request, filial: str | None = None, status: str | None 
         params.append(status)
     onde = ("WHERE " + " AND ".join(filtros)) if filtros else ""
     lotes = db.consultar(
-        "SELECT l.*, f.nome AS filial_nome, f.sistema, u.nome AS usuario_nome, t.vigencia, r.codigo AS regiao_codigo "
+        "SELECT l.*, f.nome AS filial_nome, CASE WHEN l.resumo_json LIKE '%\"sistema\": \"ion\"%' THEN 'ion' ELSE 'mercos' END AS sistema, u.nome AS usuario_nome, t.vigencia, r.codigo AS regiao_codigo "
         "FROM lotes l JOIN filiais f ON f.id = l.filial_id JOIN usuarios u ON u.id = l.usuario_id "
         f"JOIN tabelas_preco t ON t.id = l.tabela_id JOIN regioes r ON r.id = t.regiao_id {onde} "
         "ORDER BY l.criado_em DESC LIMIT 300", params)
