@@ -6,6 +6,7 @@
 @property --p-forte { syntax: '<color>'; inherits: true; initial-value: #2f6fdb; }
 @property --p-escura { syntax: '<color>'; inherits: true; initial-value: #1e3a8a; }
 @property --tinta { syntax: '<percentage>'; inherits: true; initial-value: 0%; }
+@property --acento { syntax: '<color>'; inherits: true; initial-value: #6ea8ff; }
 :root {
   color-scheme: dark;
   --texto: #e8edf6; --suave: #a3afc4; --fraco: #6c7a93;
@@ -17,7 +18,7 @@
 }
 /* destaque: neutro (azul), Mercos (roxo) ou ION (verde). Os tons derivados saem das três cores. */
 /* --tinta: quanto a paleta do destino "pinta" fundo, cartões e bordas (0% no neutro) */
-body { --p: #6ea8ff; --p-forte: #2f6fdb; --p-escura: #1e3a8a; --tinta: 0%;
+body { --p: #6ea8ff; --p-forte: #2f6fdb; --p-escura: #1e3a8a; --tinta: 0%; --acento: #6ea8ff;
   --fundo: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .45), #0a0e17);
   --fundo-2: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .6), #0f1522);
   --cartao: color-mix(in srgb, var(--p-escura) calc(var(--tinta) * .55), #121a2a);
@@ -27,9 +28,10 @@ body { --p: #6ea8ff; --p-forte: #2f6fdb; --p-escura: #1e3a8a; --tinta: 0%;
   --linha: color-mix(in srgb, var(--p) calc(var(--tinta) * .6), #1b2539);
   --p-fundo: color-mix(in srgb, var(--p) 13%, transparent); --p-borda: color-mix(in srgb, var(--p) 34%, transparent);
   --p-brilho: color-mix(in srgb, var(--p-forte) 50%, transparent); --p-grad: linear-gradient(135deg, var(--p-forte), var(--p-escura));
-  transition: --p .7s ease, --p-forte .7s ease, --p-escura .7s ease, --tinta .7s ease; }
-body.tema-mercos { --p: #a07bff; --p-forte: #8a5cf0; --p-escura: #4b2a85; --tinta: 16%; }
-body.tema-ion { --p: #3ee0b4; --p-forte: #1fc79b; --p-escura: #0b6b55; --tinta: 16%; }
+  transition: --p .7s ease, --p-forte .7s ease, --p-escura .7s ease, --tinta .7s ease, --acento .7s ease; }
+/* Mercos: o roxo escuro dos botões do app (ENTRAR) e o verde do logo como acento */
+body.tema-mercos { --p: #a98bff; --p-forte: #5a3fa0; --p-escura: #3e2d6b; --tinta: 0%; --acento: #2fd27a; }
+body.tema-ion { --p: #3ee0b4; --p-forte: #1fc79b; --p-escura: #0b6b55; --tinta: 0%; --acento: #3ee0b4; }
 
 * { box-sizing: border-box; }
 html { -webkit-font-smoothing: antialiased; }
@@ -48,7 +50,8 @@ code { background: var(--cartao-2); color: var(--p); padding: .1rem .4rem; borde
 /* ---------- topo */
 .topo { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; padding: .7rem 2rem; position: sticky; top: 0; z-index: 10;
   background: color-mix(in srgb, var(--fundo) 80%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--borda);
-  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--p) calc(var(--tinta) * 6), transparent); }
+  box-shadow: inset 0 3px 0 var(--acento-faixa, transparent); }
+body.tema-mercos .topo, body.tema-ion .topo { --acento-faixa: var(--acento); }
 .topo a { text-decoration: none; }
 .marca { font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: .65rem; white-space: nowrap; color: #fff; letter-spacing: -.01em; }
 .marca small { font-weight: 500; color: var(--suave); font-size: .8rem; }
@@ -59,7 +62,7 @@ code { background: var(--cartao-2); color: var(--p); padding: .1rem .4rem; borde
 .topo nav { display: flex; gap: .1rem; flex-wrap: wrap; flex: 1; }
 .topo nav a { padding: .4rem .7rem; border-radius: 999px; color: var(--suave); font-size: .88rem; font-weight: 500; transition: background .15s, color .15s; }
 .topo nav a:hover { background: rgba(255, 255, 255, .05); color: #fff; }
-.topo nav a.ativo { background: var(--p-fundo); color: var(--p); font-weight: 700; box-shadow: inset 0 0 0 1px var(--p-borda); }
+.topo nav a.ativo { background: var(--p-fundo); color: var(--p); font-weight: 700; box-shadow: inset 0 0 0 1px var(--p-borda), inset 0 -2px 0 var(--acento); }
 .quem { display: flex; gap: .85rem; align-items: center; font-size: .85rem; color: var(--suave); }
 .quem a, .quem .link { color: var(--suave); font-size: .85rem; text-decoration: none; }
 .quem a:hover, .quem .link:hover { color: #fff; }
@@ -201,7 +204,7 @@ ul.nota { padding-left: 1.1rem; display: flex; flex-direction: column; gap: .45r
 
 .pronta { background: var(--cartao); border: 1px solid var(--p-borda); border-radius: 20px; padding: 1.7rem 1.8rem; margin-bottom: 1.25rem;
   position: relative; overflow: hidden; box-shadow: 0 24px 50px -28px var(--p-brilho), var(--sombra); }
-.pronta::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--p-grad); }
+.pronta::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--acento), var(--p-forte)); }
 .pronta.feita { border-color: var(--borda); box-shadow: var(--sombra); }
 .pronta.feita::before { background: linear-gradient(90deg, #34d399, #0d7a55); }
 .pronta-topo { display: flex; gap: 1.1rem; align-items: center; margin-bottom: 1.3rem; }
@@ -224,7 +227,7 @@ ul.nota { padding-left: 1.1rem; display: flex; flex-direction: column; gap: .45r
 .envio { display: flex; flex-direction: column; gap: 1.1rem; align-items: flex-start; }
 .zona-arquivo { width: 100%; border: 2px dashed var(--p-borda); border-radius: 14px; padding: 1.4rem 1.5rem; margin: 0; color: var(--texto); gap: .45rem;
   background: linear-gradient(180deg, var(--p-fundo), transparent); transition: border-color .15s, background .15s; }
-.zona-arquivo:hover { border-color: var(--p); }
+.zona-arquivo:hover { border-color: var(--acento); }
 .zona-titulo { font-weight: 700; font-size: 1rem; color: #fff; }
 .zona-arquivo input[type=file] { border: 0; padding: .5rem 0 0; background: none; height: auto; box-shadow: none; }
 
